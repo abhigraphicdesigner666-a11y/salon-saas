@@ -810,7 +810,7 @@ export default function DashboardHome() {
             <Button size="sm" variant="outline" onClick={() => setShowDrawerModal(false)}>Cancel</Button>
             <Button size="sm" variant="gradient" onClick={handleAddPettyCash}>Confirm Log Out</Button>
           </DialogFooter>
-        </Dialog>
+        </DialogContent>
       </Dialog>
     </div>
   )
