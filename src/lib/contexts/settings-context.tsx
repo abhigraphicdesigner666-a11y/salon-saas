@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
 import { SettingsService } from '@/services/settings-service'
 import { useAuth } from '@/lib/auth/auth-context'
 import { useToast } from '@/components/ui/toast'
@@ -115,7 +115,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const updateSettings = async (updates: Partial<Settings>) => {
+  const updateSettings = useCallback(async (updates: Partial<Settings>) => {
     try {
       const newSettings = { ...settings, ...updates }
       setSettings(newSettings)
@@ -131,9 +131,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       error('Synchronization Failed', e.message)
       throw e
     }
-  }
+  }, [settings, tenantId])
 
-  const resetSystem = async (section: string) => {
+  const resetSystem = useCallback(async (section: string) => {
     try {
       await SettingsService.resetTable(tenantId, section)
       success('System Reset Complete', `${section.toUpperCase()} table has been cleared/reseeded.`)
@@ -153,10 +153,17 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       error('Reset Failed', e.message)
       throw e
     }
-  }
+  }, [tenantId])
+
+  const settingsValue = useMemo(() => ({
+    settings,
+    updateSettings,
+    resetSystem,
+    loading
+  }), [settings, updateSettings, resetSystem, loading])
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, resetSystem, loading }}>
+    <SettingsContext.Provider value={settingsValue}>
       {children}
     </SettingsContext.Provider>
   )
