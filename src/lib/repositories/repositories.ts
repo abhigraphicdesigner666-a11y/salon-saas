@@ -5,15 +5,21 @@ import type { Customer, Service, ServiceCategory, Staff, Appointment, Invoice, P
 // Helper to manage localStorage mock DBs
 const getMockTable = <T>(key: string, initialData: T[]): T[] => {
   if (typeof window === 'undefined') return initialData
+  const resetActive = localStorage.getItem('salon_ai_db_factory_reset_active') === 'true'
+  
+  // Exception: saas_plans and saas_settings must be preserved
+  const isPreservedKey = key === 'saas_plans' || key === 'saas_settings'
+  const finalInitial = (resetActive && !isPreservedKey) ? [] : initialData
+
   const stored = localStorage.getItem(`salon_ai_db_${key}`)
   if (!stored) {
-    localStorage.setItem(`salon_ai_db_${key}`, JSON.stringify(initialData))
-    return initialData
+    localStorage.setItem(`salon_ai_db_${key}`, JSON.stringify(finalInitial))
+    return finalInitial
   }
   try {
     return JSON.parse(stored)
   } catch {
-    return initialData
+    return finalInitial
   }
 }
 
@@ -25,6 +31,11 @@ const saveMockTable = <T>(key: string, data: T[]) => {
 
 // Instantiate mock tables on load using mock data seeds
 const getSeeds = () => {
+  if (typeof window !== 'undefined' && localStorage.getItem('salon_ai_db_factory_reset_active') === 'true') {
+    return {
+      customers: [], services: [], serviceCategories: [], staff: [], appointments: [], invoices: [], products: [], memberships: [], campaigns: [], auditLogs: [], notifications: []
+    }
+  }
   if (typeof window === 'undefined') {
     return {
       customers: [], services: [], serviceCategories: [], staff: [], appointments: [], invoices: [], products: [], memberships: [], campaigns: [], auditLogs: [], notifications: []
@@ -912,14 +923,28 @@ export const SuperAdminRepository = {
 
   factoryResetSaaS: async (): Promise<void> => {
     if (typeof window === 'undefined') return
-    const keysToRemove: string[] = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && key.startsWith('salon_ai_')) {
-        keysToRemove.push(key)
-      }
-    }
-    keysToRemove.forEach(key => localStorage.removeItem(key))
+    localStorage.setItem('salon_ai_db_factory_reset_active', 'true')
+    
+    const collectionsToClear = [
+      'tenants',
+      'customers',
+      'services',
+      'serviceCategories',
+      'staff',
+      'appointments',
+      'invoices',
+      'products',
+      'memberships',
+      'campaigns',
+      'auditLogs',
+      'notifications',
+      'saas_coupons',
+      'drawer_logs'
+    ]
+
+    collectionsToClear.forEach(col => {
+      localStorage.setItem(`salon_ai_db_${col}`, JSON.stringify([]))
+    })
   }
 }
 
