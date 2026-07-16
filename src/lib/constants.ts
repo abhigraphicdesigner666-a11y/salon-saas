@@ -1,4 +1,4 @@
-import { Scissors, Calendar, Users, CreditCard, BarChart3, Settings, Package, Megaphone, Bot, ShoppingBag, Star, FileText, Building2, UserCog, Activity, Flag, BookOpen, Shield, Layers } from 'lucide-react'
+import { Scissors, Calendar, Users, CreditCard, BarChart3, Settings, Package, Megaphone, Bot, ShoppingBag, Star, FileText, Building2, UserCog, Activity, Flag, BookOpen, Shield, Layers, Clock, Gift, ShieldAlert } from 'lucide-react'
 
 export const APP_NAME = 'SalonAI'
 export const APP_DESCRIPTION = 'AI-Powered Salon Management Platform'
@@ -34,6 +34,53 @@ export const DASHBOARD_NAV = [
   { label: 'Reports', href: '/dashboard/reports', icon: FileText },
   { label: 'AI Assistant', href: '/dashboard/ai-assistant', icon: Bot },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+]
+
+export const DASHBOARD_NAV_GROUPS = [
+  {
+    group: 'Dashboard',
+    items: [
+      { label: 'Dashboard', href: '/dashboard', icon: BarChart3, permission: 'dashboard' }
+    ]
+  },
+  {
+    group: 'Operations',
+    items: [
+      { label: 'Calendar', href: '/dashboard/appointments?view=calendar', icon: Calendar, permission: 'appointments' },
+      { label: 'Appointments', href: '/dashboard/appointments', icon: Clock, permission: 'appointments' },
+      { label: 'Customers', href: '/dashboard/customers', icon: Users, permission: 'customers' },
+      { label: 'POS', href: '/dashboard/billing', icon: CreditCard, permission: 'billing' }
+    ]
+  },
+  {
+    group: 'Management',
+    items: [
+      { label: 'Staff', href: '/dashboard/staff', icon: UserCog, permission: 'staff_management' },
+      { label: 'Services', href: '/dashboard/services', icon: Scissors, permission: 'services' },
+      { label: 'Inventory', href: '/dashboard/inventory', icon: ShoppingBag, permission: 'inventory' }
+    ]
+  },
+  {
+    group: 'Growth',
+    items: [
+      { label: 'Marketing', href: '/dashboard/marketing', icon: Megaphone, permission: 'marketing' },
+      { label: 'Memberships', href: '/dashboard/customers?tab=memberships', icon: Star, permission: 'customers' },
+      { label: 'Loyalty', href: '/dashboard/customers?tab=loyalty', icon: Gift, permission: 'customers' }
+    ]
+  },
+  {
+    group: 'Insights',
+    items: [
+      { label: 'Business Command Center', href: '/dashboard/ai-assistant', icon: ShieldAlert, permission: 'dashboard' },
+      { label: 'Reports', href: '/dashboard/reports', icon: FileText, permission: 'reports' }
+    ]
+  },
+  {
+    group: 'Administration',
+    items: [
+      { label: 'Settings', href: '/dashboard/settings', icon: Settings, permission: 'settings' }
+    ]
+  }
 ]
 
 export const ADMIN_NAV = [
