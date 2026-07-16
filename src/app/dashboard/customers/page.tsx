@@ -196,39 +196,49 @@ export default function CustomersPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden md:table-cell">Phone</TableHead>
-                  <TableHead className="hidden lg:table-cell">Visits</TableHead>
-                  <TableHead>Total Spent</TableHead>
-                  <TableHead className="hidden lg:table-cell">Last Visit</TableHead>
-                  <TableHead>Points</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginated.map(c => (
-                  <TableRow key={c.id} className="cursor-pointer" onClick={() => setSelectedId(c.id)}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9"><AvatarFallback className="text-xs">{getInitials(c.first_name, c.last_name)}</AvatarFallback></Avatar>
-                        <div>
-                          <div className="font-medium text-left">{c.first_name} {c.last_name || ''}</div>
-                          <div className="text-xs text-muted-foreground hidden sm:block text-left">{c.email}</div>
-                        </div>
-                        {c.total_spent > 100000 && <Badge variant="warning" className="text-[10px]">VIP</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-left">{c.phone}</TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm text-left">{c.total_visits}</TableCell>
-                    <TableCell className="font-medium text-sm text-left">{formatCurrency(c.total_spent)}</TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground text-left">{c.last_visit_at ? formatDate(c.last_visit_at) : 'Never'}</TableCell>
-                    <TableCell className="text-left"><Badge variant="secondary">{c.loyalty_points} pts</Badge></TableCell>
+            <div className="overflow-x-auto w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="hidden md:table-cell text-left">Phone</TableHead>
+                    <TableHead className="hidden lg:table-cell text-left">Visits</TableHead>
+                    <TableHead className="text-left">Total Spent</TableHead>
+                    <TableHead className="hidden lg:table-cell text-left">Last Visit</TableHead>
+                    <TableHead className="text-left">Points</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginated.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-xs font-medium">
+                        No customer profiles matched the current filters.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginated.map(c => (
+                      <TableRow key={c.id} className="cursor-pointer" onClick={() => setSelectedId(c.id)}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9"><AvatarFallback className="text-xs">{getInitials(c.first_name, c.last_name)}</AvatarFallback></Avatar>
+                            <div>
+                              <div className="font-medium text-left">{c.first_name} {c.last_name || ''}</div>
+                              <div className="text-xs text-muted-foreground hidden sm:block text-left">{c.email}</div>
+                            </div>
+                            {c.total_spent > 100000 && <Badge variant="warning" className="text-[10px]">VIP</Badge>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-left">{c.phone}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm text-left">{c.total_visits}</TableCell>
+                        <TableCell className="font-medium text-sm text-left">{formatCurrency(c.total_spent)}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm text-muted-foreground text-left">{c.last_visit_at ? formatDate(c.last_visit_at) : 'Never'}</TableCell>
+                        <TableCell className="text-left"><Badge variant="secondary">{c.loyalty_points} pts</Badge></TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t">
