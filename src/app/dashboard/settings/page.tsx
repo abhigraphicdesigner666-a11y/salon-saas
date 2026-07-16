@@ -71,6 +71,22 @@ export default function SettingsPage() {
   const [showConfirm, setShowConfirm] = useState<string | null>(null)
   const [confirmInput, setConfirmInput] = useState('')
 
+  React.useEffect(() => {
+    if (settings) {
+      setName(settings.name ?? '')
+      setLogo(settings.logo ?? '')
+      setPhone(settings.phone ?? '')
+      setEmail(settings.email ?? '')
+      setAddress(settings.address ?? '')
+      setGstin(settings.gstin ?? '')
+      setRate(settings.rate ?? '18')
+      setInclusive(settings.inclusive ?? true)
+      setReceiptHeader(settings.receipt_header ?? '')
+      setReceiptFooter(settings.receipt_footer ?? '')
+      setThemePreference(settings.theme ?? 'dark')
+    }
+  }, [settings])
+
   const handleSaveProfile = async () => {
     try {
       setSaving(true)
