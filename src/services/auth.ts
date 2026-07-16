@@ -3,14 +3,36 @@ import { generateId } from '@/lib/utils'
 
 export const authService = {
   signIn: async ({ email, password, rememberMe = true }: any) => {
+    if (isDemoMode) {
+      const mockUsers: Record<string, { role: string; tenantId: string; name: string }> = {
+        'owner@glamstyle.in': { role: 'salon_owner', tenantId: 'demo-tenant-001', name: 'Owner' },
+        'rekha@glamstyle.in': { role: 'stylist', tenantId: 'demo-tenant-001', name: 'Rekha' },
+        'customer@gmail.com': { role: 'customer', tenantId: 'demo-tenant-001', name: 'Customer' },
+        'admin@salonai.app': { role: 'super_admin', tenantId: 'system', name: 'Super Admin' }
+      }
+      
+      const userMeta = mockUsers[email.toLowerCase()]
+      if (userMeta && password === 'demo123456') {
+        const mockSession = {
+          access_token: 'mock-jwt-token-xyz',
+          user: {
+            id: 'mock-user-id-' + userMeta.role,
+            email,
+            app_metadata: { tenant_id: userMeta.tenantId, role: userMeta.role },
+            user_metadata: { first_name: userMeta.name, last_name: '' }
+          }
+        }
+        localStorage.setItem('salon_ai_session', JSON.stringify(mockSession))
+        const cookieValue = encodeURIComponent(JSON.stringify(mockSession))
+        const maxAge = rememberMe ? 604800 : ''
+        document.cookie = `salon_ai_session_cookie=${cookieValue}; path=/; max-age=${maxAge}; SameSite=Lax`
+        return { data: { user: mockSession.user, session: mockSession }, error: null }
+      }
+      return { data: null, error: new Error('Invalid demo credentials.') }
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return { data: null, error }
-
-    if (isDemoMode && data?.session) {
-      const cookieValue = encodeURIComponent(JSON.stringify(data.session))
-      const maxAge = rememberMe ? 604800 : '' // 7 days or session
-      document.cookie = `salon_ai_session_cookie=${cookieValue}; path=/; max-age=${maxAge}; SameSite=Lax`
-    }
 
     return { data, error: null }
   },
