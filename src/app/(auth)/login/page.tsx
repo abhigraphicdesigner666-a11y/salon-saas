@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
 import { authService } from '@/services/auth'
+import { useAuth } from '@/hooks/use-auth'
 import Link from 'next/link'
 
 const loginSchema = z.object({
@@ -24,6 +25,7 @@ type LoginValues = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const router = useRouter()
   const { success, error } = useToast()
+  const { refreshSession } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -50,9 +52,11 @@ export default function LoginPage() {
         return
       }
 
+      // Sync state inside React Provider before redirect
+      await refreshSession()
+
       success('Sign In Successful', 'Redirecting you to the platform...')
       
-      // Redirect based on role in JWT metadata
       const role = data?.user?.app_metadata?.role || 'staff'
       setTimeout(() => {
         if (role === 'super_admin') {
