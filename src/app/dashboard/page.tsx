@@ -73,6 +73,26 @@ export default function DashboardHome() {
     }
   }
 
+  const handleCheckIn = async (aptId: string, customerName: string) => {
+    try {
+      await AppointmentRepository.update(aptId, { status: 'in_progress' })
+      success('Checked In', `${customerName} is now in service.`)
+      await loadData()
+    } catch (e: any) {
+      error('Failed check-in', e.message)
+    }
+  }
+
+  const handleComplete = async (aptId: string, customerName: string) => {
+    try {
+      await AppointmentRepository.update(aptId, { status: 'completed' })
+      success('Service Completed', `${customerName}'s service is complete.`)
+      await loadData()
+    } catch (e: any) {
+      error('Failed to complete appointment', e.message)
+    }
+  }
+
   // Load Cash Drawer settings on mount
   useEffect(() => {
     loadData()
@@ -544,12 +564,13 @@ export default function DashboardHome() {
                         </TableCell>
                         <TableCell className="text-right">
                           {apt.status === 'scheduled' && (
-                            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg" onClick={() => success('Checked In', `${apt.customer_name} marked as Arrived.`)}>Check In</Button>
+                            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg" onClick={() => handleCheckIn(apt.id, apt.customer_name)}>Check In</Button>
+                          )}
+                          {apt.status === 'in_progress' && (
+                            <Button size="sm" variant="outline" className="h-7 text-[10px] rounded-lg text-emerald-500 border-emerald-500/20" onClick={() => handleComplete(apt.id, apt.customer_name)}>Complete</Button>
                           )}
                           {apt.status === 'confirmed' && (
-                            <Link href="/dashboard/billing">
-                              <Button size="sm" variant="gradient" className="h-7 text-[10px] rounded-lg">Checkout</Button>
-                            </Link>
+                            <Button size="sm" variant="gradient" className="h-7 text-[10px] rounded-lg" onClick={() => window.dispatchEvent(new CustomEvent('open-global-pos'))}>Checkout</Button>
                           )}
                           {apt.status === 'completed' && (
                             <Button size="sm" variant="ghost" className="h-7 text-[10px] rounded-lg flex items-center gap-1"><Printer className="h-3 w-3" /> Print Receipt</Button>
@@ -791,52 +812,9 @@ export default function DashboardHome() {
           </DialogFooter>
         </Dialog>
       </Dialog>
-
-      {/* ========================================================
-          FLOATING QUICK ACTIONS DIAL (ALL ROLES)
-          ======================================================== */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        <AnimatePresence>
-          {showQuickActions && (
-            <motion.div initial={{ opacity: 0, y: 15, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 15, scale: 0.95 }} className="bg-card border border-border p-4 rounded-3xl shadow-2xl w-56 space-y-2 text-left mb-2">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block px-1 mb-1.5">Quick Actions</span>
-              
-              {/* Owner actions */}
-              {role === 'salon_owner' && (
-                <>
-                  <Link href="/dashboard/appointments"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Calendar className="h-4 w-4 text-violet-500" /> New Booking</div></Link>
-                  <Link href="/dashboard/billing"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><CreditCard className="h-4 w-4 text-emerald-500" /> POS Checkout</div></Link>
-                  <Link href="/dashboard/inventory"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><ShoppingBag className="h-4 w-4 text-amber-500" /> View Inventory</div></Link>
-                  <Link href="/dashboard/reports"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><FileText className="h-4 w-4 text-blue-500" /> View Reports</div></Link>
-                </>
-              )}
-
-              {/* Receptionist actions */}
-              {role === 'receptionist' && (
-                <>
-                  <Link href="/dashboard/appointments"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Plus className="h-4 w-4 text-violet-500" /> Walk In Booking</div></Link>
-                  <Link href="/dashboard/appointments"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Calendar className="h-4 w-4 text-violet-500" /> New Booking</div></Link>
-                  <Link href="/dashboard/billing"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><CreditCard className="h-4 w-4 text-emerald-500" /> POS Checkout</div></Link>
-                  <Link href="/dashboard/customers?tab=memberships"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Star className="h-4 w-4 text-pink-500" /> Membership</div></Link>
-                  <Link href="/dashboard/billing"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Printer className="h-4 w-4 text-gray-500" /> Print Receipt</div></Link>
-                </>
-              )}
-
-              {/* Worker actions */}
-              {(role === 'stylist' || role === 'beautician' || role === 'staff') && (
-                <>
-                  <div onClick={() => { success('Clock In', 'Clock-in attendance logged.'); setShowQuickActions(false); }} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><UserCheck className="h-4 w-4 text-violet-500" /> Check In Attendance</div>
-                  <Link href="/dashboard/appointments"><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Calendar className="h-4 w-4 text-emerald-500" /> My Schedule</div></Link>
-                </>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-        
-        <Button size="icon" className="h-12 w-12 rounded-full shadow-2xl hover:scale-105 transition-transform" onClick={() => setShowQuickActions(!showQuickActions)}>
-          <Plus className={`h-6 w-6 transition-transform duration-200 ${showQuickActions ? 'rotate-45' : ''}`} />
-        </Button>
-      </div>
+    </div>
+  )
+} </div>
 
     </div>
   )
