@@ -83,5 +83,88 @@ export const SuperAdminService = {
       { status: original?.status },
       { status: newStatus }
     )
+  },
+
+  listAuditLogs: async (): Promise<any[]> => {
+    const { AuditRepository } = require('@/lib/repositories/repositories')
+    return AuditRepository.listAll()
+  },
+
+  resetPassword: async (tenantId: string, userId: string, userName: string): Promise<string> => {
+    const tempPassword = Math.random().toString(36).substring(2, 10)
+    await AuditService.log(
+      'system',
+      userId,
+      userName,
+      'reset_tenant_password',
+      'tenant',
+      tenantId,
+      null,
+      { temp_password: tempPassword }
+    )
+    return tempPassword
+  },
+
+  backupDatabase: (): string => {
+    const backup: Record<string, any> = {}
+    if (typeof window !== 'undefined') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('salon_ai_')) {
+          backup[key] = localStorage.getItem(key)
+        }
+      }
+    }
+    return JSON.stringify(backup, null, 2)
+  },
+
+  restoreDatabase: (jsonString: string): void => {
+    try {
+      const data = JSON.parse(jsonString)
+      if (typeof window !== 'undefined') {
+        Object.keys(data).forEach(key => {
+          if (key.startsWith('salon_ai_')) {
+            localStorage.setItem(key, data[key])
+          }
+        })
+      }
+    } catch (e: any) {
+      throw new Error('Invalid backup file: ' + e.message)
+    }
+  },
+
+  listPlans: async (): Promise<any[]> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    return SuperAdminRepository.listPlans()
+  },
+
+  savePlans: async (plans: any[]): Promise<void> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    await SuperAdminRepository.savePlans(plans)
+  },
+
+  listCoupons: async (): Promise<any[]> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    return SuperAdminRepository.listCoupons()
+  },
+
+  saveCoupons: async (coupons: any[]): Promise<void> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    await SuperAdminRepository.saveCoupons(coupons)
+  },
+
+  getGlobalSettings: async (): Promise<any> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    return SuperAdminRepository.getGlobalSettings()
+  },
+
+  saveGlobalSettings: async (settings: any): Promise<void> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    await SuperAdminRepository.saveGlobalSettings(settings)
+  },
+
+  factoryReset: async (): Promise<void> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    await SuperAdminRepository.factoryResetSaaS()
   }
 }
