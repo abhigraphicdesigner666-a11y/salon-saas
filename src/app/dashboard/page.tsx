@@ -25,6 +25,7 @@ export default function DashboardHome() {
   const { user, role, tenant } = useAuth()
   const { success, error } = useToast()
   const activeTenantId = tenant?.id || 'demo-tenant-001'
+  const salonName = tenant?.name || 'GlamStyle Salon'
 
   // Global State
   const [loading, setLoading] = useState(true)
