@@ -22,6 +22,8 @@ import { CustomerRepository, AppointmentRepository, InvoiceRepository, ProductRe
 import { POSCheckoutModal } from '@/components/shared/pos-checkout-modal'
 import { AppointmentWizard } from '@/components/shared/appointment-wizard'
 
+import { SettingsProvider, useSettings } from '@/lib/contexts/settings-context'
+
 const permissionKeys: Record<string, string> = {
   '/dashboard': 'dashboard',
   '/dashboard/appointments': 'appointments',
@@ -41,7 +43,7 @@ const getPermNeeded = (href: string) => {
   return permissionKeys[baseHref] || 'dashboard'
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, role, tenant, permissions, loading, logout } = useAuth()
@@ -180,7 +182,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-card">
       <div className={cn('flex items-center px-4 h-16 shrink-0', collapsed ? 'justify-center' : 'gap-3')}>
-        <Logo size="sm" showText={!collapsed} />
+        {logo ? (
+          <img src={logo} alt="Logo" className={cn("rounded-lg object-cover h-8", collapsed ? "w-8" : "w-auto")} />
+        ) : (
+          <Logo size="sm" showText={!collapsed} />
+        )}
       </div>
       <Separator />
       <ScrollArea className="flex-1 py-4">
@@ -230,7 +236,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const initials = user ? getInitials(user.first_name, user.last_name) : 'US'
   const fullName = user ? `${user.first_name} ${user.last_name}` : 'Salon User'
-  const salonName = tenant ? tenant.name : 'SalonAI space'
+  const { settings } = useSettings()
+  const salonName = settings.name || 'Salon Operating System'
+  const logo = settings.logo
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -525,6 +533,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Button>
       </div>
     </div>
+  )
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SettingsProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </SettingsProvider>
   )
 }
 
