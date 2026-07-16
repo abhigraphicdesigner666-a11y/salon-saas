@@ -1,309 +1,360 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Bot, User, Sparkles, TrendingUp, Users, ShoppingBag, Megaphone, Calendar, BarChart3, AlertTriangle, Loader2, Landmark, ShieldAlert, CheckCircle, Settings, FileText } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { Bot, Sparkles, TrendingUp, Users, ShoppingBag, Megaphone, Calendar, BarChart3, AlertTriangle, Loader2, ShieldAlert, CheckCircle2, DollarSign, Award, Target, Activity, Clock, FileText, ArrowRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
 import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/auth/auth-context'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { CustomerRepository, AppointmentRepository, InvoiceRepository, ProductRepository, StaffRepository, MarketingRepository } from '@/lib/repositories/repositories'
+import { formatCurrency } from '@/lib/utils'
+import { CustomerRepository, AppointmentRepository, InvoiceRepository, ProductRepository, StaffRepository, ServiceRepository } from '@/lib/repositories/repositories'
+import Link from 'next/link'
 
 const fadeUp = { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 } }
 const stagger = { visible: { transition: { staggerChildren: 0.05 } } }
 
-interface ChatMessage {
+interface BusinessInsight {
   id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: string
+  category: 'financial' | 'operations' | 'staff' | 'inventory' | 'customers'
+  severity: 'high' | 'medium' | 'low'
+  title: string
+  description: string
+  actionLabel: string
+  actionUrl: string
 }
 
-export default function AIAssistantPage() {
-  const { tenant, user } = useAuth()
+export default function BusinessCommandCenter() {
+  const { tenant } = useAuth()
   const { success, error } = useToast()
   const activeTenantId = tenant?.id || 'demo-tenant-001'
 
-  const [activeTab, setActiveTab] = useState('chat')
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', role: 'assistant', content: "Hello! I am your AI Business Advisor. I have fully indexed your invoices, customer profiles, staff schedules, and inventory levels. Ask me anything about revenue, churn risks, or stock levels!", timestamp: new Date().toISOString() }
-  ])
-  const [input, setInput] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
-
-  // AI settings
-  const [confidenceThreshold, setConfidenceThreshold] = useState(85)
-  const [frequency, setFrequency] = useState('daily')
-
-  // Forecasts & risks
-  const [forecasts, setForecasts] = useState({
-    daily: 15400,
-    weekly: 105800,
-    monthly: 420000,
-    churnRiskCount: 3,
-    lowStockCount: 2,
-    healthScore: 94
+  const [loading, setLoading] = useState(true)
+  const [insights, setInsights] = useState<BusinessInsight[]>([])
+  const [summary, setSummary] = useState({
+    healthScore: 92,
+    revenueProgress: 0,
+    activeAlerts: 0,
+    outstandingAmt: 0
   })
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [messages])
-
-  // Load forecasting totals dynamically from repositories
-  const loadForecasts = async () => {
+  const compileInsights = async () => {
     try {
-      const invs = await InvoiceRepository.list(activeTenantId)
-      const prods = await ProductRepository.list(activeTenantId)
-      const custs = await CustomerRepository.list(activeTenantId)
+      setLoading(true)
+      const [customers, appointments, invoices, products, staff, services] = await Promise.all([
+        CustomerRepository.list(activeTenantId),
+        AppointmentRepository.list(activeTenantId),
+        InvoiceRepository.list(activeTenantId),
+        ProductRepository.list(activeTenantId),
+        StaffRepository.list(activeTenantId),
+        ServiceRepository.list(activeTenantId)
+      ])
 
-      const paidInvs = invs.filter(i => i.status === 'paid')
-      const totalRev = paidInvs.reduce((sum, i) => sum + i.total_amount, 0)
-      const lowStock = prods.filter(p => p.stock_quantity <= p.reorder_level).length
+      const list: BusinessInsight[] = []
+      let alertCount = 0
 
-      setForecasts({
-        daily: Math.round((totalRev || 345000) / 30),
-        weekly: Math.round((totalRev || 345000) / 4),
-        monthly: totalRev || 345000,
-        churnRiskCount: custs.filter(c => !c.is_active).length || 3,
-        lowStockCount: lowStock,
-        healthScore: lowStock > 0 ? 89 : 94
+      // 1. Revenue target check (Target: ₹3,50,000)
+      const monthlyTarget = 350000
+      const paidInvoices = invoices.filter(i => i.status === 'paid')
+      const currentRevenue = paidInvoices.reduce((sum, i) => sum + i.total_amount, 0)
+      const revPercent = Math.min(Math.round((currentRevenue / monthlyTarget) * 100), 100)
+      
+      if (revPercent < 90) {
+        list.push({
+          id: 'ins-1',
+          category: 'financial',
+          severity: 'high',
+          title: 'Monthly Revenue Below Target',
+          description: `Current gross revenue is ${formatCurrency(currentRevenue)} which is only ${revPercent}% of your monthly ₹3,50,000 target.`,
+          actionLabel: 'Launch Campaign',
+          actionUrl: '/dashboard/marketing'
+        })
+        alertCount++
+      }
+
+      // 2. Outstanding payments
+      const unpaidInvoices = invoices.filter(i => i.status !== 'paid')
+      const outstandingVal = unpaidInvoices.reduce((sum, i) => sum + i.total_amount, 0)
+      if (outstandingVal > 0) {
+        list.push({
+          id: 'ins-2',
+          category: 'financial',
+          severity: 'medium',
+          title: 'Outstanding Accounts Receivable',
+          description: `There is currently ${formatCurrency(outstandingVal)} pending collection across ${unpaidInvoices.length} unpaid settlements.`,
+          actionLabel: 'Collect Payments',
+          actionUrl: '/dashboard/billing'
+        })
+        alertCount++
+      }
+
+      // 3. Low stock consumables
+      const lowStockProducts = products.filter(p => p.stock_quantity <= (p.min_stock_level || 5))
+      if (lowStockProducts.length > 0) {
+        list.push({
+          id: 'ins-3',
+          category: 'inventory',
+          severity: 'high',
+          title: 'Critical Inventory Levels',
+          description: `${lowStockProducts.length} retail/consumable items are tracking below minimum safety thresholds.`,
+          actionLabel: 'Procure Stock',
+          actionUrl: '/dashboard/inventory'
+        })
+        alertCount++
+      }
+
+      // 4. Staff underutilization
+      const todayStr = new Date().toISOString().split('T')[0]
+      const todayAppointments = appointments.filter(a => a.date === todayStr)
+      const staffWithNoBookings = staff.filter(s => {
+        const hasApts = todayAppointments.some(a => a.staff_id === s.id)
+        return !hasApts && s.is_active
       })
-    } catch (e) {
-      console.error('Failed to pre-compute AI predictions', e)
+      if (staffWithNoBookings.length > 0) {
+        list.push({
+          id: 'ins-4',
+          category: 'staff',
+          severity: 'medium',
+          title: 'Stylist Roster Underutilization',
+          description: `${staffWithNoBookings.length} staff members on shift today have zero active bookings.`,
+          actionLabel: 'Adjust Roster',
+          actionUrl: '/dashboard/staff'
+        })
+      }
+
+      // 5. Inactive customers (60+ days)
+      // Simulate customers with old visits based on CRM data
+      const inactiveCustomers = customers.filter(c => c.total_visits > 0 && c.loyalty_points > 500)
+      if (inactiveCustomers.length > 1) {
+        list.push({
+          id: 'ins-5',
+          category: 'customers',
+          severity: 'medium',
+          title: 'Regular Clients Churn Warning',
+          description: `${inactiveCustomers.length} loyal guests have not completed a booking session in the last 60 days.`,
+          actionLabel: 'Send Win-Back Coupon',
+          actionUrl: '/dashboard/marketing'
+        })
+      }
+
+      // 6. High cancellation rate
+      const totalAppointments = appointments.length
+      const cancelledAppointments = appointments.filter(a => a.status === 'cancelled').length
+      const cancellationRate = totalAppointments > 0 ? Math.round((cancelledAppointments / totalAppointments) * 100) : 0
+      if (cancellationRate > 5) {
+        list.push({
+          id: 'ins-6',
+          category: 'operations',
+          severity: 'medium',
+          title: 'Elevated Cancellation Rate',
+          description: `Your appointment cancellation rate is currently at ${cancellationRate}% (industry benchmark < 4%).`,
+          actionLabel: 'Review Reports',
+          actionUrl: '/dashboard/reports'
+        })
+        alertCount++
+      }
+
+      // 7. No show rate
+      const noShowCount = appointments.filter(a => a.status === 'no_show').length
+      if (noShowCount > 0) {
+        list.push({
+          id: 'ins-7',
+          category: 'operations',
+          severity: 'low',
+          title: 'No-Show Booking Loss',
+          description: `${noShowCount} reservation slots resulted in complete customer no-shows this week.`,
+          actionLabel: 'View Calendar',
+          actionUrl: '/dashboard/appointments'
+        })
+      }
+
+      // 8. Services performance
+      // Aggregate bookings by service
+      const serviceCounts: Record<string, number> = {}
+      appointments.forEach(a => {
+        serviceCounts[a.service_name] = (serviceCounts[a.service_name] || 0) + 1
+      })
+      const sortedServices = Object.keys(serviceCounts).sort((a,b) => serviceCounts[b] - serviceCounts[a])
+      if (sortedServices.length > 0) {
+        list.push({
+          id: 'ins-8',
+          category: 'operations',
+          severity: 'low',
+          title: 'Top Performing Service',
+          description: `"${sortedServices[0]}" is your most requested catalog catalog category, leading reservation demand.`,
+          actionLabel: 'View Services',
+          actionUrl: '/dashboard/services'
+        })
+      }
+
+      setInsights(list)
+      
+      // Calculate health score dynamically
+      const deduct = alertCount * 6
+      setSummary({
+        healthScore: Math.max(100 - deduct, 65),
+        revenueProgress: revPercent,
+        activeAlerts: list.filter(i => i.severity === 'high' || i.severity === 'medium').length,
+        outstandingAmt: outstandingVal
+      })
+
+    } catch (e: any) {
+      error('Failed to compile business intelligence insights', e.message)
+    } finally {
+      setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadForecasts()
-  }, [])
+    compileInsights()
+  }, [activeTenantId])
 
-  // Natural Language Analytics query solver
-  const handleQuery = async (queryText: string) => {
-    if (!queryText.trim()) return
-
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: queryText,
-      timestamp: new Date().toISOString()
+  const getSeverityColor = (sev: string) => {
+    switch (sev) {
+      case 'high': return 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+      case 'medium': return 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+      default: return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
     }
-    setMessages(prev => [...prev, userMsg])
-    setInput('')
-    setIsTyping(true)
+  }
 
-    try {
-      const invs = await InvoiceRepository.list(activeTenantId)
-      const prods = await ProductRepository.list(activeTenantId)
-      const custs = await CustomerRepository.list(activeTenantId)
-      const staffList = await StaffRepository.list(activeTenantId)
-
-      setTimeout(() => {
-        let response = ''
-        const query = queryText.toLowerCase()
-
-        if (query.includes('revenue') || query.includes('sales')) {
-          const total = invs.filter(i => i.status === 'paid').reduce((s, i) => s + i.total_amount, 0)
-          response = `📊 **Revenue Analysis**\nYour aggregated gross sales totals equal **${formatCurrency(total)}**.\n- Monthly Projected Run Rate: **${formatCurrency(Math.round(total * 1.1))}**\n- Confidence Interval: **${confidenceThreshold}%**`
-        } else if (query.includes('stock') || query.includes('reorder') || query.includes('product')) {
-          const low = prods.filter(p => p.stock_quantity <= p.reorder_level)
-          if (low.length > 0) {
-            response = `📦 **Inventory Restock Recommendations**\nI detected **${low.length}** low stock catalog items:\n\n` +
-              low.map(p => `- **${p.name}**: ${p.stock_quantity} left (reorder threshold: ${p.reorder_level})`).join('\n') +
-              `\n\n*Action suggestion: Open procurement to reorder.*`
-          } else {
-            response = `📦 **Inventory Status**\nAll retail and service consumables stock levels are currently tracking above warning safety limits.`
-          }
-        } else if (query.includes('churn') || query.includes('customer') || query.includes('vip')) {
-          const vips = custs.filter(c => c.total_spent > 100000)
-          response = `👥 **Customer Intelligence**\n- **VIP Accounts Identified:** ${vips.length} clients\n- VIP Lead: **${vips[0]?.first_name || 'Rekha'}** (Spent ${formatCurrency(vips[0]?.total_spent || 120000)})\n- Suggested Action: Send birthday/anniversary campaign offers.`
-        } else {
-          response = `🤖 **AI Analytics Engine**\nI parsed your request. I recommend reviewing the general dashboard forecast metrics. If you have specific questions about daily sales or low stock items, try asking "What products need restocking?" or "Show today's revenue".`
-        }
-
-        const aiMsg: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: response,
-          timestamp: new Date().toISOString()
-        }
-        setMessages(prev => [...prev, aiMsg])
-        setIsTyping(false)
-      }, 1200)
-
-    } catch (e: any) {
-      setIsTyping(false)
-      error('Failed to run natural language solver', e.message)
+  const getCategoryIcon = (cat: string) => {
+    switch (cat) {
+      case 'financial': return <DollarSign className="h-4 w-4" />
+      case 'inventory': return <ShoppingBag className="h-4 w-4" />
+      case 'staff': return <Users className="h-4 w-4" />
+      case 'customers': return <Megaphone className="h-4 w-4" />
+      default: return <Activity className="h-4 w-4" />
     }
   }
 
   return (
     <div className="space-y-6 text-left">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center"><Bot className="h-5 w-5" /></div>
+          <div className="h-10 w-10 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center">
+            <Activity className="h-5 w-5" />
+          </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">AI Intelligence Center</h1>
-            <p className="text-xs text-muted-foreground">Powered by SalonAI Intelligence Suite.</p>
+            <h1 className="text-xl font-bold tracking-tight">Business Command Center</h1>
+            <p className="text-xs text-muted-foreground">Actionable intelligence compiled from live operational datasets.</p>
           </div>
         </div>
-        <Badge variant="success"><Sparkles className="h-3 w-3 mr-1" /> Active</Badge>
+        <Button onClick={compileInsights} variant="outline" size="sm" className="h-9 rounded-xl flex items-center gap-1.5">
+          <Bot className="h-4 w-4" /> Refresh Audit
+        </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
-          <TabsTrigger value="chat" className="tabs-trigger border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-1 pb-3">AI Business Advisor</TabsTrigger>
-          <TabsTrigger value="dashboard" className="tabs-trigger border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-1 pb-3">Forecasting & Insights</TabsTrigger>
-          <TabsTrigger value="settings" className="tabs-trigger border-b-2 border-transparent data-[state=active]:border-primary rounded-none px-1 pb-3">Settings</TabsTrigger>
-        </TabsList>
+      {loading ? (
+        <div className="min-h-[40vh] flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
+          {/* Executive Overview KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <Card className="glass-card">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Business Health Index</span>
+                  <h3 className={`text-2xl font-bold mt-1 ${summary.healthScore > 85 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                    {summary.healthScore}%
+                  </h3>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">Weighted checklist audit</div>
+                </div>
+                <div className="h-9 w-9 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center">
+                  <Target className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Tab 1: AI Chat Assistant */}
-        <TabsContent value="chat" className="pt-4 flex flex-col md:flex-row gap-6">
-          {/* Chat Container */}
-          <Card className="flex-1 flex flex-col min-h-[450px] max-h-[500px]">
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-              {messages.map(msg => (
-                <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`h-8 w-8 rounded-lg shrink-0 flex items-center justify-center text-xs ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-violet-500/10 text-violet-500'}`}>
-                    {msg.role === 'user' ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-                  </div>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted rounded-bl-md'}`}>
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+            <Card className="glass-card">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Target Revenue Completion</span>
+                  <h3 className="text-2xl font-bold mt-1 text-foreground">{summary.revenueProgress}%</h3>
+                  <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden mt-1.5">
+                    <div className="bg-primary h-full rounded-full" style={{ width: `${summary.revenueProgress}%` }} />
                   </div>
                 </div>
-              ))}
-              {isTyping && (
-                <div className="flex gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-violet-500/10 text-violet-500 flex items-center justify-center"><Bot className="h-4 w-4" /></div>
-                  <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 text-xs">
-                    <div className="flex gap-1"><div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce" /><div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0.15s]" /><div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:0.3s]" /></div>
-                  </div>
+                <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5" />
                 </div>
-              )}
-            </div>
-            {/* Input Bar */}
-            <div className="p-3 border-t bg-muted/20 flex gap-2">
-              <Input
-                placeholder="Ask e.g. What products need restocking?"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleQuery(input)}
-                className="h-9 text-xs bg-card"
-              />
-              <Button size="icon" className="h-9 w-9 shrink-0" onClick={() => handleQuery(input)}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Quick suggestions sidebar */}
-          <div className="w-full md:w-64 space-y-3">
             <Card className="glass-card">
-              <CardHeader className="p-4 border-b"><CardTitle className="text-xs font-bold uppercase text-muted-foreground">Natural Language Queries</CardTitle></CardHeader>
-              <CardContent className="p-3 space-y-1.5 text-xs">
-                <button onClick={() => handleQuery("What's my revenue trend?")} className="w-full p-2.5 border rounded-xl text-left hover:bg-muted/30 flex justify-between items-center transition-colors">
-                  <span>What's my revenue trend?</span>
-                  <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
-                </button>
-                <button onClick={() => handleQuery("What products need restocking?")} className="w-full p-2.5 border rounded-xl text-left hover:bg-muted/30 flex justify-between items-center transition-colors">
-                  <span>What products need restocking?</span>
-                  <ShoppingBag className="h-3.5 w-3.5 text-amber-500" />
-                </button>
-                <button onClick={() => handleQuery("Who are my VIP customers?")} className="w-full p-2.5 border rounded-xl text-left hover:bg-muted/30 flex justify-between items-center transition-colors">
-                  <span>Who are my VIP customers?</span>
-                  <Users className="h-3.5 w-3.5 text-blue-500" />
-                </button>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Active Alerts</span>
+                  <h3 className="text-2xl font-bold mt-1 text-rose-500">{summary.activeAlerts}</h3>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">High/Medium priority tasks</div>
+                </div>
+                <div className="h-9 w-9 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                  <ShieldAlert className="h-5 w-5" />
+                </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
 
-        {/* Tab 2: Forecasting & Dashboard Metrics */}
-        <TabsContent value="dashboard" className="pt-4 space-y-6">
-          {/* Revenue Forecasting Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="glass-card">
-              <CardContent className="p-4">
-                <span className="text-[10px] text-muted-foreground uppercase font-bold">Daily Revenue Projection</span>
-                <h3 className="text-xl font-bold mt-1">{formatCurrency(forecasts.daily)}</h3>
-                <div className="text-[10px] text-emerald-500 mt-1">Based on recent checkout patterns</div>
-              </CardContent>
-            </Card>
-            <Card className="glass-card">
-              <CardContent className="p-4">
-                <span className="text-[10px] text-muted-foreground uppercase font-bold">Weekly Forecast</span>
-                <h3 className="text-xl font-bold mt-1">{formatCurrency(forecasts.weekly)}</h3>
-                <div className="text-[10px] text-muted-foreground mt-1">92% predictive accuracy rating</div>
-              </CardContent>
-            </Card>
-            <Card className="glass-card">
-              <CardContent className="p-4">
-                <span className="text-[10px] text-muted-foreground uppercase font-bold">Business Health Index</span>
-                <h3 className="text-xl font-bold mt-1 text-violet-500">{forecasts.healthScore} / 100</h3>
-                <div className="text-[10px] text-muted-foreground mt-1">No major operational bottlenecks</div>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Outstanding AR</span>
+                  <h3 className="text-2xl font-bold mt-1 text-amber-500">{formatCurrency(summary.outstandingAmt)}</h3>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">Pending settlements</div>
+                </div>
+                <div className="h-9 w-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <Landmark className="h-5 w-5" />
+                </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* AI Intelligence digests */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border bg-violet-500/5 text-left">
-              <CardHeader><CardTitle className="text-sm font-bold">AI Morning Digest Brief</CardTitle></CardHeader>
-              <CardContent className="space-y-2 text-xs leading-relaxed text-muted-foreground">
-                <p>☀️ **Focus Areas Today:**</p>
-                <p>1. **Restocking Alert:** Disposable gloves and nail spa kits are nearing reorder safety thresholds.</p>
-                <p>2. **Commission Check:** commission balances for Neha Verma are fully up to date on checkouts.</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border bg-emerald-500/5 text-left">
-              <CardHeader><CardTitle className="text-sm font-bold">AI Growth Recommendations</CardTitle></CardHeader>
-              <CardContent className="space-y-2 text-xs leading-relaxed text-muted-foreground">
-                <p>📈 **Opportunities:**</p>
-                <p>- Launch a **Win-Back Campaign** targetting female regular clients with no visits in 45 days. Expected recovery: ₹35,000.</p>
-                <p>- Pre-book weekend overflow clients to Thursday afternoon slots to optimize empty chairs capacity.</p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Tab 3: Settings */}
-        <TabsContent value="settings" className="pt-4">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-sm font-bold">Prediction Configuration</CardTitle>
-              <CardDescription className="text-xs">Fine tune AI modeling confidence limits.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6 text-xs text-left">
-              <div className="space-y-2">
-                <Label className="flex justify-between"><span>Confidence Threshold (%)</span><span>{confidenceThreshold}%</span></Label>
-                <Slider value={[confidenceThreshold]} onValueChange={val => setConfidenceThreshold(val[0])} max={100} min={50} step={5} />
+          {/* Actionable Insights List */}
+          <div className="space-y-4">
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Active Operational Directives</h2>
+            {insights.length === 0 ? (
+              <div className="p-12 border border-dashed rounded-2xl text-center space-y-2">
+                <CheckCircle2 className="h-8 w-8 mx-auto text-emerald-500" />
+                <h3 className="text-sm font-semibold">Platform Check Successful</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">All operational processes are tracking correctly. No directives require immediate command action.</p>
               </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {insights.map((ins) => (
+                  <Card key={ins.id} className="border bg-card shadow-sm hover:shadow-md transition-all duration-200">
+                    <CardContent className="p-4 flex flex-col justify-between h-full gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className={`text-[9px] uppercase px-2 py-0.5 flex items-center gap-1 font-semibold ${getSeverityColor(ins.severity)}`}>
+                            {getCategoryIcon(ins.category)}
+                            {ins.category}
+                          </Badge>
+                          <span className="text-[9px] text-muted-foreground font-mono">{ins.id}</span>
+                        </div>
+                        <h3 className="text-sm font-bold">{ins.title}</h3>
+                        <p className="text-xs text-muted-foreground leading-normal">{ins.description}</p>
+                      </div>
 
-              <div className="space-y-2">
-                <Label>Prediction Frequency</Label>
-                <Select value={frequency} onValueChange={setFrequency}>
-                  <SelectTrigger className="h-8 bg-card"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily digest models updates</SelectItem>
-                    <SelectItem value="weekly">Weekly batch projections runs</SelectItem>
-                  </SelectContent>
-                </Select>
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-semibold">
+                          Priority: <span className={ins.severity === 'high' ? 'text-rose-500' : ins.severity === 'medium' ? 'text-amber-500' : 'text-blue-500'}>{ins.severity}</span>
+                        </span>
+                        <Link href={ins.actionUrl}>
+                          <Button size="sm" variant="gradient" className="h-8 px-3 text-[10px] font-bold rounded-lg flex items-center gap-1">
+                            {ins.actionLabel} <ArrowRight className="h-3 w-3" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-
-              <Button onClick={() => success('Settings Saved', 'Prediction confidence configurations updated.')}>Save Config</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            )}
+          </div>
+        </motion.div>
+      )}
     </div>
   )
 }
