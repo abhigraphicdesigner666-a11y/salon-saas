@@ -115,36 +115,46 @@ export default function BillingPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="hidden md:table-cell">Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Payment</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(inv => (
-                  <TableRow key={inv.id}>
-                    <TableCell className="font-medium text-sm text-left">{inv.invoice_number}</TableCell>
-                    <TableCell className="text-sm text-left">{inv.customer_name}</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground text-left">{formatDate(inv.created_at)}</TableCell>
-                    <TableCell className="font-semibold text-sm text-left">{formatCurrency(inv.total_amount)}</TableCell>
-                    <TableCell className="text-left"><Badge className={cn('text-[10px]', getStatusColor(inv.status))}>{inv.status}</Badge></TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm capitalize text-left">{inv.payment_method || '—'}</TableCell>
-                    <TableCell className="text-left">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedInvId(inv.id)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            <div className="overflow-x-auto w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="hidden md:table-cell text-left">Date</TableHead>
+                    <TableHead className="text-left">Amount</TableHead>
+                    <TableHead className="text-left">Status</TableHead>
+                    <TableHead className="hidden lg:table-cell text-left">Payment</TableHead>
+                    <TableHead className="text-left">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-xs font-medium">
+                        No billing invoices matched the current search criteria.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filtered.map(inv => (
+                      <TableRow key={inv.id}>
+                        <TableCell className="font-medium text-sm text-left">{inv.invoice_number}</TableCell>
+                        <TableCell className="text-sm text-left">{inv.customer_name}</TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground text-left">{formatDate(inv.created_at)}</TableCell>
+                        <TableCell className="font-semibold text-sm text-left">{formatCurrency(inv.total_amount)}</TableCell>
+                        <TableCell className="text-left"><Badge className={cn('text-[10px]', getStatusColor(inv.status))}>{inv.status}</Badge></TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm capitalize text-left">{inv.payment_method || '—'}</TableCell>
+                        <TableCell className="text-left">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedInvId(inv.id)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
