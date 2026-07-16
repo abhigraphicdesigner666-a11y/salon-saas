@@ -65,7 +65,7 @@ export function InvoiceDetailsModal({ invoiceId, isOpen, onClose, onSuccess }: I
     if (!invoice) return
     
     // Gated to owners and managers
-    if (role !== 'owner' && role !== 'manager') {
+    if (role !== 'owner' && role !== 'salon_owner' && role !== 'manager') {
       error('Access Denied', 'Only salon managers and owners can refund invoices.')
       return
     }
