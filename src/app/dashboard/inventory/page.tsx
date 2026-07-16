@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Search, Filter, Box, IndianRupee, Truck, FileText, ExclamationTriangle, Loader2 } from 'lucide-react'
+import { Plus, Search, Filter, Box, IndianRupee, Truck, FileText, AlertTriangle, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -176,8 +176,8 @@ export default function InventoryPage() {
         {[
           { label: 'Total Products', value: products.length, icon: Box, color: 'text-foreground' },
           { label: 'Inventory Valuation', value: formatCurrency(totalValue), icon: IndianRupee, color: 'text-emerald-500' },
-          { label: 'Low Stock Alerts', value: lowStockCount, icon: ExclamationTriangle, color: 'text-amber-500' },
-          { label: 'Out of Stock', value: outOfStockCount, icon: ExclamationTriangle, color: 'text-rose-500' },
+          { label: 'Low Stock Alerts', value: lowStockCount, icon: AlertTriangle, color: 'text-amber-500' },
+          { label: 'Out of Stock', value: outOfStockCount, icon: AlertTriangle, color: 'text-rose-500' },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="p-4 flex items-center justify-between">
