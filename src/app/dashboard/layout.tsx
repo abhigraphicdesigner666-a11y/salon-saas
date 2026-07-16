@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, Search, ChevronLeft, ChevronRight as ChevRight, LogOut, Settings, User, Menu, ShieldAlert } from 'lucide-react'
+import { Bell, Search, ChevronLeft, ChevronRight as ChevRight, LogOut, Settings, User, Menu, ShieldAlert, CreditCard, Sparkles, UserCheck, Calendar, Receipt, ShoppingBag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -12,11 +12,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Logo } from '@/components/shared/logo'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
-import { DASHBOARD_NAV } from '@/lib/constants'
-import { cn, getInitials } from '@/lib/utils'
+import { DASHBOARD_NAV_GROUPS } from '@/lib/constants'
+import { cn, getInitials, formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/auth-context'
+import { CustomerRepository, AppointmentRepository, InvoiceRepository, ProductRepository, StaffRepository } from '@/lib/repositories/repositories'
 
 const permissionKeys: Record<string, string> = {
   '/dashboard': 'dashboard',
@@ -32,12 +34,97 @@ const permissionKeys: Record<string, string> = {
   '/dashboard/settings': 'settings',
 }
 
+const getPermNeeded = (href: string) => {
+  const baseHref = href.split('?')[0]
+  return permissionKeys[baseHref] || 'dashboard'
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, tenant, permissions, loading, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Universal Search states
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any>({
+    customers: [],
+    appointments: [],
+    invoices: [],
+    staff: [],
+    products: []
+  })
+
+  // Keyboard shortcut Command+K or Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Trigger search on query change
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults({ customers: [], appointments: [], invoices: [], staff: [], products: [] })
+      return
+    }
+    
+    const fetchSearch = async () => {
+      try {
+        const tenantId = tenant?.id || 'demo-tenant-001'
+        const [allCustomers, allAppointments, allInvoices, allStaff, allProducts] = await Promise.all([
+          CustomerRepository.list(tenantId),
+          AppointmentRepository.list(tenantId),
+          InvoiceRepository.list(tenantId),
+          StaffRepository.list(tenantId),
+          ProductRepository.list(tenantId)
+        ])
+        
+        const q = searchQuery.toLowerCase().trim()
+        
+        const customers = allCustomers.filter(c => 
+          `${c.first_name} ${c.last_name}`.toLowerCase().includes(q) ||
+          (c.email && c.email.toLowerCase().includes(q)) ||
+          (c.phone && c.phone.includes(q))
+        ).slice(0, 3)
+
+        const appointments = allAppointments.filter(a => 
+          a.customer_name.toLowerCase().includes(q) || 
+          a.staff_name.toLowerCase().includes(q) ||
+          a.service_name.toLowerCase().includes(q)
+        ).slice(0, 3)
+
+        const invoices = allInvoices.filter(i => 
+          i.invoice_number.toLowerCase().includes(q) || 
+          i.customer_name.toLowerCase().includes(q)
+        ).slice(0, 3)
+
+        const staff = allStaff.filter(s => 
+          `${s.first_name} ${s.last_name}`.toLowerCase().includes(q) ||
+          s.role.toLowerCase().includes(q)
+        ).slice(0, 3)
+
+        const products = allProducts.filter(p => 
+          p.name.toLowerCase().includes(q) || 
+          (p.sku && p.sku.toLowerCase().includes(q))
+        ).slice(0, 3)
+
+        setSearchResults({ customers, appointments, invoices, staff, products })
+      } catch (e) {
+        console.error('Search query error:', e)
+      }
+    }
+
+    const timer = setTimeout(fetchSearch, 150)
+    return () => clearTimeout(timer)
+  }, [searchQuery, tenant])
 
   // Redirect if user has no permission for current route
   useEffect(() => {
@@ -47,15 +134,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const permissionNeeded = permissionKeys[routeKey]
       if (permissions && !permissions[permissionNeeded]) {
         // Find first permitted page
-        const firstPermitted = DASHBOARD_NAV.find(item => {
-          const perm = permissionKeys[item.href]
-          return permissions[perm]
-        })
-        if (firstPermitted) {
-          router.push(firstPermitted.href)
-        } else {
-          logout()
+        let foundHref = '/dashboard'
+        for (const g of DASHBOARD_NAV_GROUPS) {
+          const permitted = g.items.find(item => permissions[getPermNeeded(item.href)])
+          if (permitted) {
+            foundHref = permitted.href
+            break
+          }
         }
+        router.push(foundHref)
       }
     }
   }, [pathname, permissions, loading, router])
@@ -68,35 +155,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     )
   }
 
-  // Check if user is authorized for current path
   const currentRouteKey = Object.keys(permissionKeys).find(k => pathname === k || pathname.startsWith(k + '/'))
   const isAuthorized = currentRouteKey ? permissions[permissionKeys[currentRouteKey]] : true
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-card">
       <div className={cn('flex items-center px-4 h-16 shrink-0', collapsed ? 'justify-center' : 'gap-3')}>
         <Logo size="sm" showText={!collapsed} />
       </div>
       <Separator />
       <ScrollArea className="flex-1 py-4">
-        <nav className="px-3 space-y-1">
-          {DASHBOARD_NAV.map((item) => {
-            const permKey = permissionKeys[item.href]
-            const isPermitted = permissions && permissions[permKey]
+        <nav className="px-3 space-y-4">
+          {DASHBOARD_NAV_GROUPS.map((group) => {
+            const permittedItems = group.items.filter(item => {
+              const permKey = getPermNeeded(item.href)
+              return permissions && permissions[permKey]
+            })
 
-            if (!isPermitted) return null
+            if (permittedItems.length === 0) return null
 
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
             return (
-              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
-                <div className={cn('sidebar-item', isActive && 'sidebar-item-active', collapsed && 'justify-center px-2')}>
-                  <item.icon className="h-5 w-5 shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
-                  {!collapsed && item.label === 'AI Assistant' && (
-                    <Badge variant="info" className="ml-auto text-[10px] px-1.5">AI</Badge>
-                  )}
-                </div>
-              </Link>
+              <div key={group.group} className="space-y-1">
+                {!collapsed && (
+                  <h3 className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest py-1.5 text-left">
+                    {group.group}
+                  </h3>
+                )}
+                {permittedItems.map(item => {
+                  const isActive = pathname === item.href.split('?')[0] || (item.href !== '/dashboard' && pathname.startsWith(item.href.split('?')[0]))
+                  return (
+                    <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
+                      <div className={cn('sidebar-item flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer hover:bg-muted/50 text-muted-foreground hover:text-foreground', isActive && 'bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary font-semibold', collapsed && 'justify-center px-2')}>
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        {!collapsed && <span>{item.label}</span>}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
             )
           })}
         </nav>
@@ -105,9 +201,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className={cn('p-3', collapsed && 'flex justify-center')}>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="sidebar-item w-full justify-center"
+          className="sidebar-item w-full justify-center flex items-center px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-xl"
         >
-          {collapsed ? <ChevRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" /><span className="ml-2">Collapse</span></>}
+          {collapsed ? <ChevRight className="h-4 w-4" /> : <><ChevronLeft className="h-4 w-4" /><span className="ml-2 text-sm font-medium">Collapse</span></>}
         </button>
       </div>
     </div>
@@ -118,7 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const salonName = tenant ? tenant.name : 'SalonAI space'
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
       <motion.aside
         className="fixed left-0 top-0 bottom-0 z-40 bg-card border-r border-border hidden lg:block"
@@ -157,17 +253,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Top Bar */}
         <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl">
           <div className="flex items-center justify-between h-full px-4 lg:px-6">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)}>
+            <div className="flex items-center gap-3 flex-1">
+              <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={() => setMobileOpen(true)}>
                 <Menu className="h-5 w-5" />
               </Button>
-              <div className="hidden sm:flex items-center gap-2 bg-muted rounded-xl px-3 py-1.5 w-64">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <input placeholder="Search... (⌘K)" className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted-foreground" />
+              
+              {/* Universal Search Trigger */}
+              <div 
+                onClick={() => setSearchOpen(true)}
+                className="flex items-center gap-2 bg-muted hover:bg-muted/70 cursor-pointer rounded-xl px-3 py-1.5 w-64 transition-colors"
+              >
+                <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm text-muted-foreground select-none text-left flex-1">Search... (⌘K)</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              {/* One-Click POS Action */}
+              {permissions?.billing && (
+                <Link href="/dashboard/billing">
+                  <Button size="sm" variant="gradient" className="h-9 px-4 rounded-xl flex items-center gap-1.5 font-semibold text-xs shadow-sm">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Open POS
+                  </Button>
+                </Link>
+              )}
+
               <ThemeToggle />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -222,6 +333,107 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
+
+        {/* Universal Search Dialog Modal */}
+        <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+          <DialogContent className="max-w-2xl p-0 overflow-hidden bg-card border border-border rounded-2xl shadow-2xl">
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
+              <Search className="h-5 w-5 text-muted-foreground shrink-0" />
+              <Input
+                placeholder="Search customers, appointments, invoices, products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent border-0 border-none outline-none focus:ring-0 p-0 text-base flex-1 shadow-none focus-visible:ring-0"
+                autoFocus
+              />
+              <kbd className="hidden sm:inline-flex select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                ESC
+              </kbd>
+            </div>
+            
+            <ScrollArea className="max-h-[60vh] p-4">
+              {!searchQuery ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  <Sparkles className="h-8 w-8 mx-auto mb-2 text-primary opacity-60" />
+                  Type to search across everything in your Salon Operating System
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Customers Results */}
+                  {searchResults.customers.length > 0 && (
+                    <div className="space-y-1.5 text-left">
+                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2 flex items-center gap-1"><UserCheck className="h-3 w-3" /> Customers</h4>
+                      {searchResults.customers.map((c: any) => (
+                        <div key={c.id} onClick={() => { setSearchOpen(false); router.push(`/dashboard/customers?search=${c.first_name}`) }} className="flex justify-between items-center p-2.5 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors">
+                          <div>
+                            <div className="font-semibold text-sm">{c.first_name} {c.last_name}</div>
+                            <div className="text-xs text-muted-foreground">{c.phone} | {c.email}</div>
+                          </div>
+                          <Badge variant="outline" className="text-[9px]">Points: {c.loyalty_points}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Appointments Results */}
+                  {searchResults.appointments.length > 0 && (
+                    <div className="space-y-1.5 text-left">
+                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2 flex items-center gap-1"><Calendar className="h-3 w-3" /> Appointments</h4>
+                      {searchResults.appointments.map((a: any) => (
+                        <div key={a.id} onClick={() => { setSearchOpen(false); router.push('/dashboard/appointments') }} className="flex justify-between items-center p-2.5 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors">
+                          <div>
+                            <div className="font-semibold text-sm">{a.customer_name} ({a.service_name})</div>
+                            <div className="text-xs text-muted-foreground">Stylist: {a.staff_name} | {a.time}</div>
+                          </div>
+                          <Badge variant="outline" className="text-[9px] uppercase">{a.status}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Invoices Results */}
+                  {searchResults.invoices.length > 0 && (
+                    <div className="space-y-1.5 text-left">
+                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2 flex items-center gap-1"><Receipt className="h-3 w-3" /> Invoices</h4>
+                      {searchResults.invoices.map((i: any) => (
+                        <div key={i.id} onClick={() => { setSearchOpen(false); router.push('/dashboard/billing') }} className="flex justify-between items-center p-2.5 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors">
+                          <div>
+                            <div className="font-semibold text-sm">{i.invoice_number} - {i.customer_name}</div>
+                            <div className="text-xs text-muted-foreground">Settlement: {i.payment_method} | Status: {i.status}</div>
+                          </div>
+                          <span className="font-bold text-sm">{formatCurrency(i.total_amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Products Results */}
+                  {searchResults.products.length > 0 && (
+                    <div className="space-y-1.5 text-left">
+                      <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-2 flex items-center gap-1"><ShoppingBag className="h-3 w-3" /> Inventory Products</h4>
+                      {searchResults.products.map((p: any) => (
+                        <div key={p.id} onClick={() => { setSearchOpen(false); router.push('/dashboard/inventory') }} className="flex justify-between items-center p-2.5 rounded-xl hover:bg-muted/50 cursor-pointer transition-colors">
+                          <div>
+                            <div className="font-semibold text-sm">{p.name}</div>
+                            <div className="text-xs text-muted-foreground">SKU: {p.sku} | Price: {formatCurrency(p.price)}</div>
+                          </div>
+                          <Badge variant={p.stock_quantity <= p.min_stock_level ? 'destructive' : 'outline'} className="text-[9px]">Stock: {p.stock_quantity}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Zero Results fallback */}
+                  {searchResults.customers.length === 0 && searchResults.appointments.length === 0 && searchResults.invoices.length === 0 && searchResults.staff.length === 0 && searchResults.products.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
+                      No matching records found for "{searchQuery}"
+                    </div>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
 
         {/* Page Content */}
         <main className="p-4 lg:p-6">
