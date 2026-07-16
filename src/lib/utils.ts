@@ -5,45 +5,75 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number | null | undefined): string {
+  if (amount == null || isNaN(amount)) return '₹0'
   return `₹${amount.toLocaleString('en-IN')}`
 }
 
-export function formatDate(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return 'Never'
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date
+    if (isNaN(d.getTime())) return 'Never'
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  } catch {
+    return 'Never'
+  }
 }
 
-export function formatTime(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+export function formatTime(date: string | Date | null | undefined): string {
+  if (!date) return 'Unknown'
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date
+    if (isNaN(d.getTime())) return 'Unknown'
+    return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+  } catch {
+    return 'Unknown'
+  }
 }
 
-export function formatRelativeTime(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
+export function formatRelativeTime(date: string | Date | null | undefined): string {
+  if (!date) return 'Never'
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date
+    if (isNaN(d.getTime())) return 'Never'
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return formatDate(d)
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    if (diffDays < 7) return `${diffDays}d ago`
+    return formatDate(d)
+  } catch {
+    return 'Never'
+  }
+}
+
+export function formatPercent(value: number | null | undefined): string {
+  if (value == null || isNaN(value)) return '0%'
+  return `${Math.round(value)}%`
+}
+
+export function formatPhone(phone: string | null | undefined): string {
+  if (!phone) return 'Unknown'
+  return phone.trim()
 }
 
 export function generateId(): string {
   return crypto.randomUUID?.() ?? Math.random().toString(36).substring(2, 15)
 }
 
-export function truncate(str: string, length: number): string {
+export function truncate(str: string | null | undefined, length: number): string {
+  if (!str) return ''
   if (str.length <= length) return str
   return str.substring(0, length) + '...'
 }
 
-export function getInitials(firstName: string, lastName?: string): string {
+export function getInitials(firstName: string | null | undefined, lastName?: string | null): string {
   const first = firstName?.charAt(0)?.toUpperCase() || ''
   const last = lastName?.charAt(0)?.toUpperCase() || ''
   return `${first}${last}` || '?'
