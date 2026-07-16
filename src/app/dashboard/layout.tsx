@@ -47,6 +47,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, role, tenant, permissions, loading, logout } = useAuth()
+  const { settings } = useSettings()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -236,9 +237,97 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const initials = user ? getInitials(user.first_name, user.last_name) : 'US'
   const fullName = user ? `${user.first_name} ${user.last_name}` : 'Salon User'
-  const { settings } = useSettings()
   const salonName = settings.name || 'Salon Operating System'
   const logo = settings.logo
+
+  // Memoize Sidebar components to prevent re-renders on layout content changes
+  const sidebarComponent = useMemo(() => (
+    <SidebarContent />
+  ), [collapsed, pathname, logo, permissions])
+
+  // Memoize Header component to prevent top-bar reconstruction
+  const headerComponent = useMemo(() => (
+    <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl">
+      <div className="flex items-center justify-between h-full px-4 lg:px-6">
+        <div className="flex items-center gap-3 flex-1">
+          <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={() => setMobileOpen(true)}>
+            <Menu className="h-5 w-5" />
+          </Button>
+          
+          {/* Universal Search Trigger */}
+          <div 
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 bg-muted hover:bg-muted/70 cursor-pointer rounded-xl px-3 py-1.5 w-64 transition-colors"
+          >
+            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm text-muted-foreground select-none text-left flex-1">Search... (⌘K)</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* One-Click POS Action */}
+          {permissions?.billing && (
+            <Button onClick={() => setShowPOS(true)} size="sm" variant="gradient" className="h-9 px-4 rounded-xl flex items-center gap-1.5 font-semibold text-xs shadow-sm">
+              <CreditCard className="h-3.5 w-3.5" />
+              Open POS
+            </Button>
+          )}
+
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">3</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                <span className="text-sm font-medium">New Online Booking</span>
+                <span className="text-xs text-muted-foreground">Priya Sharma booked Haircut for 9:00 AM</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                <span className="text-sm font-medium">Low Stock Alert</span>
+                <span className="text-xs text-muted-foreground">OPI Nail Polish Set below minimum</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1 py-3">
+                <span className="text-sm font-medium">Payment Received</span>
+                <span className="text-xs text-muted-foreground">₹7,080 from Priya Sharma</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Separator orientation="vertical" className="h-8 mx-1" />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2.5 hover:bg-accent rounded-xl px-2 py-1.5 transition-colors">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="hidden sm:block text-left">
+                  <div className="text-sm font-medium">{fullName}</div>
+                  <div className="text-[10px] text-muted-foreground">{salonName}</div>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem><User className="mr-2 h-4 w-4" /> Profile</DropdownMenuItem>
+              <DropdownMenuItem><Settings className="mr-2 h-4 w-4" /> Settings</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout} className="text-rose-500 focus:text-rose-500 cursor-pointer">
+                <LogOut className="mr-2 h-4 w-4" /> Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </header>
+  ), [initials, fullName, salonName, permissions, logout])
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -248,7 +337,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         animate={{ width: collapsed ? 72 : 280 }}
         transition={{ duration: 0.2 }}
       >
-        <SidebarContent />
+        {sidebarComponent}
       </motion.aside>
 
       {/* Mobile Sidebar Overlay */}
@@ -269,7 +358,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               transition={{ type: 'spring', damping: 25 }}
               className="fixed left-0 top-0 bottom-0 z-50 w-[280px] bg-card border-r border-border lg:hidden"
             >
-              <SidebarContent />
+              {sidebarComponent}
             </motion.aside>
           </>
         )}
@@ -277,13 +366,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <div className={cn('transition-all duration-200', collapsed ? 'lg:ml-[72px]' : 'lg:ml-[280px]')}>
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 h-16 border-b border-border bg-background/80 backdrop-blur-xl">
-          <div className="flex items-center justify-between h-full px-4 lg:px-6">
-            <div className="flex items-center gap-3 flex-1">
-              <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={() => setMobileOpen(true)}>
-                <Menu className="h-5 w-5" />
-              </Button>
+        {headerComponent}
               
               {/* Universal Search Trigger */}
               <div 
