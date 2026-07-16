@@ -214,37 +214,47 @@ export default function InventoryPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product Name</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>Available Stock</TableHead>
-                      <TableHead>Cost Price</TableHead>
-                      <TableHead>Retail Price</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProducts.map(p => {
-                      const isLow = p.stock_quantity <= (p.reorder_level || 5)
-                      return (
-                        <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelectedProductId(p.id)}>
-                          <TableCell className="font-semibold text-sm text-left">{p.name}</TableCell>
-                          <TableCell className="text-sm text-left">{p.sku}</TableCell>
-                          <TableCell className="text-sm font-bold text-left">{p.stock_quantity} units</TableCell>
-                          <TableCell className="text-sm text-left">{formatCurrency(p.cost_price || p.price * 0.6)}</TableCell>
-                          <TableCell className="text-sm text-left">{formatCurrency(p.price)}</TableCell>
-                          <TableCell className="text-left">
-                            <Badge variant={isLow ? 'destructive' : 'success'} className="text-[10px]">
-                              {isLow ? 'Low Stock' : 'Good'}
-                            </Badge>
+                <div className="overflow-x-auto w-full">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product Name</TableHead>
+                        <TableHead className="hidden sm:table-cell text-left">SKU</TableHead>
+                        <TableHead className="text-left">Available Stock</TableHead>
+                        <TableHead className="hidden md:table-cell text-left">Cost Price</TableHead>
+                        <TableHead className="text-left">Retail Price</TableHead>
+                        <TableHead className="text-left">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProducts.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-xs font-medium">
+                            No catalog items found matching your search.
                           </TableCell>
                         </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
+                      ) : (
+                        filteredProducts.map(p => {
+                          const isLow = p.stock_quantity <= (p.reorder_level || 5)
+                          return (
+                            <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelectedProductId(p.id)}>
+                              <TableCell className="font-semibold text-sm text-left">{p.name}</TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm text-left">{p.sku}</TableCell>
+                              <TableCell className="text-sm font-bold text-left">{p.stock_quantity} units</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm text-left">{formatCurrency(p.cost_price || p.price * 0.6)}</TableCell>
+                              <TableCell className="text-sm text-left">{formatCurrency(p.price)}</TableCell>
+                              <TableCell className="text-left">
+                                <Badge variant={isLow ? 'destructive' : 'success'} className="text-[10px]">
+                                  {isLow ? 'Low Stock' : 'Good'}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -259,28 +269,38 @@ export default function InventoryPage() {
 
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Supplier Company</TableHead>
-                    <TableHead>Contact Person</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Outstanding Dues</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {suppliers.map(s => (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-semibold text-sm text-left">{s.name}</TableCell>
-                      <TableCell className="text-sm text-left">{s.contact_person}</TableCell>
-                      <TableCell className="text-sm text-left">{s.phone}</TableCell>
-                      <TableCell className="text-sm text-left">{s.email}</TableCell>
-                      <TableCell className="text-sm font-semibold text-left">{formatCurrency(s.outstanding_balance || 0)}</TableCell>
+              <div className="overflow-x-auto w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Supplier Company</TableHead>
+                      <TableHead className="hidden sm:table-cell text-left">Contact Person</TableHead>
+                      <TableHead className="text-left">Phone</TableHead>
+                      <TableHead className="hidden md:table-cell text-left">Email</TableHead>
+                      <TableHead className="text-left">Outstanding Dues</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {suppliers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-12 text-muted-foreground text-xs font-medium">
+                          No supplier records onboarded yet.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      suppliers.map(s => (
+                        <TableRow key={s.id}>
+                          <TableCell className="font-semibold text-sm text-left">{s.name}</TableCell>
+                          <TableCell className="hidden sm:table-cell text-sm text-left">{s.contact_person}</TableCell>
+                          <TableCell className="text-sm text-left">{s.phone}</TableCell>
+                          <TableCell className="hidden md:table-cell text-sm text-left">{s.email}</TableCell>
+                          <TableCell className="text-sm font-semibold text-left">{formatCurrency(s.outstanding_balance || 0)}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -294,32 +314,42 @@ export default function InventoryPage() {
 
           <Card>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>PO ID</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Expected Delivery</TableHead>
-                    <TableHead>Total Cost</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {purchaseOrders.map(po => (
-                    <TableRow key={po.id} className="cursor-pointer" onClick={() => setSelectedPoId(po.id)}>
-                      <TableCell className="font-semibold text-sm text-left">PO-{po.id.slice(-4)}</TableCell>
-                      <TableCell className="text-sm text-left">{po.supplier_name}</TableCell>
-                      <TableCell className="text-sm text-left">{po.expected_delivery}</TableCell>
-                      <TableCell className="text-sm font-semibold text-left">{formatCurrency(po.total_cost)}</TableCell>
-                      <TableCell className="text-left">
-                        <Badge variant={po.status === 'completed' ? 'success' : 'warning'} className="capitalize text-[10px]">
-                          {po.status}
-                        </Badge>
-                      </TableCell>
+              <div className="overflow-x-auto w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>PO ID</TableHead>
+                      <TableHead>Supplier</TableHead>
+                      <TableHead className="hidden sm:table-cell text-left">Expected Delivery</TableHead>
+                      <TableHead className="text-left">Total Cost</TableHead>
+                      <TableHead className="text-left">Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {purchaseOrders.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-12 text-muted-foreground text-xs font-medium">
+                          No procurement purchase orders logged.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      purchaseOrders.map(po => (
+                        <TableRow key={po.id} className="cursor-pointer" onClick={() => setSelectedPoId(po.id)}>
+                          <TableCell className="font-semibold text-sm text-left">PO-{po.id.slice(-4)}</TableCell>
+                          <TableCell className="text-sm text-left">{po.supplier_name}</TableCell>
+                          <TableCell className="hidden sm:table-cell text-sm text-left">{po.expected_delivery}</TableCell>
+                          <TableCell className="text-sm font-semibold text-left">{formatCurrency(po.total_cost)}</TableCell>
+                          <TableCell className="text-left">
+                            <Badge variant={po.status === 'completed' ? 'success' : 'warning'} className="capitalize text-[10px]">
+                              {po.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
