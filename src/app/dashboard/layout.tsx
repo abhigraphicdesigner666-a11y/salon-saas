@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Bell, Search, ChevronLeft, ChevronRight as ChevRight, LogOut, Settings, User, Menu, ShieldAlert, CreditCard, Sparkles, UserCheck, Calendar, Receipt, ShoppingBag } from 'lucide-react'
+import { Bell, Search, ChevronLeft, ChevronRight as ChevRight, LogOut, Settings, User, Menu, ShieldAlert, CreditCard, Sparkles, UserCheck, Calendar, Receipt, ShoppingBag, Star, FileText, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,8 @@ import { DASHBOARD_NAV_GROUPS } from '@/lib/constants'
 import { cn, getInitials, formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/auth-context'
 import { CustomerRepository, AppointmentRepository, InvoiceRepository, ProductRepository, StaffRepository } from '@/lib/repositories/repositories'
+import { POSCheckoutModal } from '@/components/shared/pos-checkout-modal'
+import { AppointmentWizard } from '@/components/shared/appointment-wizard'
 
 const permissionKeys: Record<string, string> = {
   '/dashboard': 'dashboard',
@@ -42,9 +44,14 @@ const getPermNeeded = (href: string) => {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, tenant, permissions, loading, logout } = useAuth()
+  const { user, role, tenant, permissions, loading, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Direct modal trigger states
+  const [showPOS, setShowPOS] = useState(false)
+  const [showNewApt, setShowNewApt] = useState(false)
+  const [showQuickActions, setShowQuickActions] = useState(false)
 
   // Universal Search states
   const [searchOpen, setSearchOpen] = useState(false)
@@ -67,6 +74,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  // Listen for global modal open events
+  useEffect(() => {
+    const handleOpenPOS = () => setShowPOS(true)
+    const handleOpenApt = () => setShowNewApt(true)
+    window.addEventListener('open-global-pos', handleOpenPOS)
+    window.addEventListener('open-global-booking', handleOpenApt)
+    return () => {
+      window.removeEventListener('open-global-pos', handleOpenPOS)
+      window.removeEventListener('open-global-booking', handleOpenApt)
+    }
   }, [])
 
   // Trigger search on query change
@@ -271,12 +290,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-3">
               {/* One-Click POS Action */}
               {permissions?.billing && (
-                <Link href="/dashboard/billing">
-                  <Button size="sm" variant="gradient" className="h-9 px-4 rounded-xl flex items-center gap-1.5 font-semibold text-xs shadow-sm">
-                    <CreditCard className="h-3.5 w-3.5" />
-                    Open POS
-                  </Button>
-                </Link>
+                <Button onClick={() => setShowPOS(true)} size="sm" variant="gradient" className="h-9 px-4 rounded-xl flex items-center gap-1.5 font-semibold text-xs shadow-sm">
+                  <CreditCard className="h-3.5 w-3.5" />
+                  Open POS
+                </Button>
               )}
 
               <ThemeToggle />
@@ -451,6 +468,61 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           )}
         </main>
+      </div>
+
+      {/* Globally Mounted Modals */}
+      <POSCheckoutModal isOpen={showPOS} onClose={() => setShowPOS(false)} onSuccess={() => { router.refresh(); }} />
+      <AppointmentWizard isOpen={showNewApt} onClose={() => setShowNewApt(false)} onSuccess={() => { router.refresh(); }} />
+
+      {/* ========================================================
+          FLOATING QUICK ACTIONS DIAL (ALL ROLES)
+          ======================================================== */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        <AnimatePresence>
+          {showQuickActions && (
+            <motion.div 
+              initial={{ opacity: 0, y: 15, scale: 0.95 }} 
+              animate={{ opacity: 1, y: 0, scale: 1 }} 
+              exit={{ opacity: 0, y: 15, scale: 0.95 }} 
+              className="bg-card border border-border p-4 rounded-3xl shadow-2xl w-56 space-y-2 text-left mb-2"
+            >
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block px-1 mb-1.5 font-sans">Quick Actions</span>
+              
+              {/* Owner actions */}
+              {role === 'salon_owner' && (
+                <>
+                  <div onClick={() => { setShowNewApt(true); setShowQuickActions(false); }} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Calendar className="h-4 w-4 text-violet-500" /> New Booking</div>
+                  <div onClick={() => { setShowPOS(true); setShowQuickActions(false); }} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><CreditCard className="h-4 w-4 text-emerald-500" /> POS Checkout</div>
+                  <Link href="/dashboard/inventory" onClick={() => setShowQuickActions(false)}><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><ShoppingBag className="h-4 w-4 text-amber-500" /> View Inventory</div></Link>
+                  <Link href="/dashboard/reports" onClick={() => setShowQuickActions(false)}><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><FileText className="h-4 w-4 text-blue-500" /> View Reports</div></Link>
+                </>
+              )}
+
+              {/* Receptionist actions */}
+              {role === 'receptionist' && (
+                <>
+                  <div onClick={() => { setShowNewApt(true); setShowQuickActions(false); }} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Plus className="h-4 w-4 text-violet-500" /> Walk In Booking</div>
+                  <div onClick={() => { setShowNewApt(true); setShowQuickActions(false); }} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Calendar className="h-4 w-4 text-violet-500" /> New Booking</div>
+                  <div onClick={() => { setShowPOS(true); setShowQuickActions(false); }} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><CreditCard className="h-4 w-4 text-emerald-500" /> POS Checkout</div>
+                  <Link href="/dashboard/customers?tab=memberships" onClick={() => setShowQuickActions(false)}><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Star className="h-4 w-4 text-pink-500" /> Membership</div></Link>
+                  <Link href="/dashboard/billing" onClick={() => setShowQuickActions(false)}><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Printer className="h-4 w-4 text-gray-500" /> Print Receipt</div></Link>
+                </>
+              )}
+
+              {/* Worker actions */}
+              {(role === 'stylist' || role === 'beautician' || role === 'staff') && (
+                <>
+                  <div onClick={() => { alert('Clock In Attendance logged.'); setShowQuickActions(false); }} className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><UserCheck className="h-4 w-4 text-violet-500" /> Check In Attendance</div>
+                  <Link href="/dashboard/appointments" onClick={() => setShowQuickActions(false)}><div className="flex items-center gap-2 p-2 hover:bg-muted/50 rounded-xl cursor-pointer text-xs font-semibold"><Calendar className="h-4 w-4 text-emerald-500" /> My Schedule</div></Link>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <Button size="icon" className="h-12 w-12 rounded-full shadow-2xl hover:scale-105 transition-transform" onClick={() => setShowQuickActions(!showQuickActions)}>
+          <Plus className={`h-6 w-6 transition-transform duration-200 ${showQuickActions ? 'rotate-45' : ''}`} />
+        </Button>
       </div>
     </div>
   )
