@@ -6,8 +6,12 @@ import { usePathname } from 'next/navigation'
 import { Calendar, Layers, Star, User, Sparkles } from 'lucide-react'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
 
-export default function PortalLayout({ children }: { children: React.ReactNode }) {
+import { SettingsProvider, useSettings } from '@/lib/contexts/settings-context'
+
+function PortalLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { settings } = useSettings()
+  const salonName = settings.name || 'Salon Operating System'
 
   const navItems = [
     { label: 'Book Now', href: '/portal/book', icon: Calendar },
@@ -24,7 +28,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           <div className="h-7 w-7 rounded-lg bg-gradient-to-tr from-violet-500 to-purple-600 flex items-center justify-center">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
-          <span className="font-bold text-sm">GlamStyle Client Portal</span>
+          <span className="font-bold text-sm">{salonName} Client Portal</span>
         </div>
         <ThemeToggle />
       </header>
@@ -49,5 +53,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
         })}
       </nav>
     </div>
+  )
+}
+
+export default function PortalLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SettingsProvider>
+      <PortalLayoutContent>{children}</PortalLayoutContent>
+    </SettingsProvider>
   )
 }
