@@ -17,10 +17,10 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const [collapsed, setCollapsed] = useState(false)
 
   const navItems = [
-    { label: 'Global Overview', href: '/admin', icon: BarChart3 },
-    { label: 'Tenants (Salons)', href: '/admin/salons', icon: Building2 },
-    { label: 'Plans & Billing', href: '/admin/subscriptions', icon: CreditCard },
-    { label: 'System Audit Logs', href: '/admin/audit', icon: Shield },
+    { label: 'Global Command Center', href: '/admin?tab=overview', icon: BarChart3 },
+    { label: 'Tenants (Salons)', href: '/admin?tab=tenants', icon: Building2 },
+    { label: 'Plans & Billing', href: '/admin?tab=billing', icon: CreditCard },
+    { label: 'System Audit Logs', href: '/admin?tab=audit', icon: Shield },
   ]
 
   const handleLogout = async () => {
