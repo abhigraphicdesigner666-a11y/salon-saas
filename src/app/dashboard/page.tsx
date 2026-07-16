@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useAuth } from '@/lib/auth/auth-context'
 import { useToast } from '@/components/ui/toast'
-import { cn, formatCurrency, formatDate } from '@/lib/utils'
+import { cn, formatCurrency, formatDate, formatPercent } from '@/lib/utils'
 import { CustomerRepository, AppointmentRepository, InvoiceRepository, ProductRepository, StaffRepository } from '@/lib/repositories/repositories'
+import { useSettings } from '@/lib/contexts/settings-context'
 import Link from 'next/link'
 
 const fadeUp = { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 } }
@@ -24,8 +25,9 @@ const stagger = { visible: { transition: { staggerChildren: 0.05 } } }
 export default function DashboardHome() {
   const { user, role, tenant } = useAuth()
   const { success, error } = useToast()
+  const { settings } = useSettings()
   const activeTenantId = tenant?.id || 'demo-tenant-001'
-  const salonName = tenant?.name || 'GlamStyle Salon'
+  const salonName = settings.name || 'Salon Operating System'
 
   // Global State
   const [loading, setLoading] = useState(true)
@@ -299,12 +301,48 @@ export default function DashboardHome() {
               <CardContent className="p-4">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {[
-                    { label: 'Booking Conversion', value: '88%', sub: 'Target: >85%', color: 'text-emerald-500' },
-                    { label: 'Repeat Rate', value: '82%', sub: 'Target: >75%', color: 'text-emerald-500' },
-                    { label: 'Average Ticket Value', value: '₹2,450', sub: 'Services + Retail product', color: 'text-foreground' },
-                    { label: 'Membership Revenue', value: '₹84,500', sub: 'Silver & Gold sales', color: 'text-foreground' },
-                    { label: 'Package Checkout', value: '14 checked', sub: 'Prepaid service bundles', color: 'text-foreground' },
-                    { label: 'Retail Product Sales', value: '₹42,800', sub: '12% of gross revenue', color: 'text-primary' },
+                    {
+                      label: 'Booking Conversion',
+                      value: formatPercent(appointments.length > 0 ? (appointments.filter(a => a.status === 'completed').length / appointments.length) * 100 : 0),
+                      sub: `Total slots: ${appointments.length}`,
+                      color: 'text-emerald-500'
+                    },
+                    {
+                      label: 'Repeat Rate',
+                      value: formatPercent(customers.length > 0 ? (customers.filter(c => (c.total_visits || 0) > 1).length / customers.length) * 100 : 0),
+                      sub: `Clients database: ${customers.length}`,
+                      color: 'text-emerald-500'
+                    },
+                    {
+                      label: 'Average Ticket Value',
+                      value: formatCurrency(paidInvoices.length > 0 ? totalGrossRev / paidInvoices.length : 0),
+                      sub: 'Sum per paid cart invoice',
+                      color: 'text-foreground'
+                    },
+                    {
+                      label: 'Membership Revenue',
+                      value: formatCurrency(paidInvoices.reduce((sum, inv) => {
+                        const hasMembership = inv.items?.some((i: any) => i.name?.toLowerCase().includes('membership') || i.type === 'membership')
+                        return sum + (hasMembership ? inv.total_amount : 0)
+                      }, 0)),
+                      sub: 'Active tier collections',
+                      color: 'text-foreground'
+                    },
+                    {
+                      label: 'Package Checkout',
+                      value: `${invoices.filter(inv => inv.payment_method === 'package' || inv.payment_method === 'gift_card').length} checked`,
+                      sub: 'Redeemed prepayments',
+                      color: 'text-foreground'
+                    },
+                    {
+                      label: 'Retail Product Sales',
+                      value: formatCurrency(paidInvoices.reduce((sum, inv) => {
+                        const productTotal = inv.items?.filter((i: any) => i.type === 'product').reduce((s: number, item: any) => s + (item.total || item.quantity * item.unit_price || 0), 0) || 0
+                        return sum + productTotal
+                      }, 0)),
+                      sub: `${paidInvoices.reduce((sum, inv) => sum + (inv.items?.filter((i: any) => i.type === 'product').length || 0), 0)} items sold`,
+                      color: 'text-primary'
+                    },
                   ].map((kpi, idx) => (
                     <div key={idx} className="p-3 border rounded-2xl bg-muted/20 text-left">
                       <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider block">{kpi.label}</span>
