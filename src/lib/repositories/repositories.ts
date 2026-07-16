@@ -786,5 +786,94 @@ export const SuperAdminRepository = {
   }
 }
 
+export const SettingsRepository = {
+  getSettings: async (tenantId: string): Promise<any> => {
+    const list = getMockTable<any>('settings', [
+      {
+        id: 'default-settings',
+        tenant_id: tenantId,
+        name: 'GlamStyle Salon & Spa',
+        logo: '',
+        phone: '+91 98765 43210',
+        email: 'contact@glamstyle.in',
+        address: '12, Link Road, Bandra West, Mumbai, MH - 400050',
+        gstin: '27AAAAA1111A1Z1',
+        rate: '18',
+        currency: 'INR',
+        receipt_header: 'GLAMSTYLE SALON & SPA',
+        receipt_footer: 'Thank you for your visit! Returns/refunds within 7 days.',
+        theme: 'dark',
+        business_hours: [
+          { day: 'Monday', open: '09:00', close: '20:00', closed: false },
+          { day: 'Tuesday', open: '09:00', close: '20:00', closed: false },
+          { day: 'Wednesday', open: '09:00', close: '20:00', closed: false },
+          { day: 'Thursday', open: '09:00', close: '20:00', closed: false },
+          { day: 'Friday', open: '09:00', close: '21:00', closed: false },
+          { day: 'Saturday', open: '08:00', close: '21:00', closed: false },
+          { day: 'Sunday', open: '08:00', close: '20:00', closed: false },
+        ]
+      }
+    ])
+    return list.find(s => s.tenant_id === tenantId) || list[0]
+  },
+
+  saveSettings: async (tenantId: string, updates: any): Promise<any> => {
+    const list = getMockTable<any>('settings', [])
+    const idx = list.findIndex(s => s.tenant_id === tenantId)
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...updates, updated_at: new Date().toISOString() }
+      saveMockTable('settings', list)
+      return list[idx]
+    } else {
+      const newSettings = { id: generateId(), tenant_id: tenantId, ...updates, created_at: new Date().toISOString() }
+      list.push(newSettings)
+      saveMockTable('settings', list)
+      return newSettings
+    }
+  },
+
+  resetTable: async (tenantId: string, section: string): Promise<void> => {
+    if (typeof window === 'undefined') return
+    
+    if (section === 'transactions') {
+      localStorage.removeItem('salon_ai_db_invoices')
+      localStorage.removeItem('salon_ai_drawer_logs')
+      localStorage.setItem('salon_ai_drawer_opening', '5000')
+      localStorage.setItem('salon_ai_drawer_open', 'false')
+      saveMockTable('invoices', [])
+    } else if (section === 'appointments') {
+      localStorage.removeItem('salon_ai_db_appointments')
+      saveMockTable('appointments', [])
+    } else if (section === 'customers') {
+      localStorage.removeItem('salon_ai_db_customers')
+      saveMockTable('customers', [
+        { id: 'c1', tenant_id: tenantId, first_name: 'Priya', last_name: 'Sharma', email: 'priya.sharma@gmail.com', phone: '+91 98765 43210', loyalty_points: 2450, total_visits: 34, total_spent: 89500, is_active: true, created_at: new Date().toISOString() },
+        { id: 'c2', tenant_id: tenantId, first_name: 'Anita', last_name: 'Desai', email: 'anita.desai@yahoo.com', phone: '+91 87654 32109', loyalty_points: 5200, total_visits: 56, total_spent: 234000, is_active: true, created_at: new Date().toISOString() }
+      ])
+    } else if (section === 'inventory') {
+      localStorage.removeItem('salon_ai_db_products')
+      localStorage.removeItem('salon_ai_db_purchaseOrders')
+      localStorage.removeItem('salon_ai_db_inventoryTransactions')
+      saveMockTable('products', [
+        { id: 'p1', tenant_id: tenantId, name: "L'Oréal Hair Serum", description: 'Smoothening serum 100ml', sku: 'LOR-SER-001', category: 'Hair Care', brand: "L'Oréal", cost_price: 350, selling_price: 599, tax_percent: 18, stock_quantity: 24, min_stock_level: 5, is_active: true, created_at: new Date().toISOString() }
+      ])
+    } else if (section === 'memberships') {
+      localStorage.removeItem('salon_ai_db_memberships')
+      localStorage.removeItem('salon_ai_db_customerPackages')
+      localStorage.removeItem('salon_ai_db_giftCards')
+      saveMockTable('memberships', [
+        { id: 'm1', tenant_id: tenantId, name: 'Gold Membership', price: 1500, discount_percent: 15, services_limit: 10, status: 'active' }
+      ])
+    } else if (section === 'marketing') {
+      localStorage.removeItem('salon_ai_db_campaigns')
+      localStorage.removeItem('salon_ai_db_segments')
+      localStorage.removeItem('salon_ai_db_coupons')
+      saveMockTable('campaigns', [])
+    } else if (section === 'demo') {
+      localStorage.clear()
+    }
+  }
+}
+
 
 
