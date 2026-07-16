@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { IndianRupee, Calendar, Users, CreditCard, Plus, BarChart3, Bot, Settings, ArrowRight, Clock, AlertTriangle, Gift, TrendingUp, Filter, Activity, Star, ShieldAlert, CheckCircle, RefreshCw, ShoppingBag, Eye, EyeOff, Layout, ChevronRight, UserCheck, DollarSign, Wallet, Percent, Printer, Search, Lock, Unlock, MessageSquare, Clipboard, User, Flame, Loader2, Award } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -162,26 +162,26 @@ export default function DashboardHome() {
   }
 
   // Aggregate stats
-  const paidInvoices = invoices.filter(i => i.status === 'paid')
-  const totalGrossRev = paidInvoices.reduce((sum, i) => sum + i.total_amount, 0)
-  const gstTax = Math.round(totalGrossRev * 0.18)
-  const netRevenue = Math.round(totalGrossRev * 0.82)
-  const estimatedExpenses = Math.round(totalGrossRev * 0.35 + 5000)
-  const profitMargin = netRevenue - estimatedExpenses
-  const outstandingBal = invoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.total_amount, 0)
+  const paidInvoices = useMemo(() => invoices.filter(i => i.status === 'paid'), [invoices])
+  const totalGrossRev = useMemo(() => paidInvoices.reduce((sum, i) => sum + i.total_amount, 0), [paidInvoices])
+  const gstTax = useMemo(() => Math.round(totalGrossRev * 0.18), [totalGrossRev])
+  const netRevenue = useMemo(() => Math.round(totalGrossRev * 0.82), [totalGrossRev])
+  const estimatedExpenses = useMemo(() => Math.round(totalGrossRev * 0.35 + 5000), [totalGrossRev])
+  const profitMargin = useMemo(() => netRevenue - estimatedExpenses, [netRevenue, estimatedExpenses])
+  const outstandingBal = useMemo(() => invoices.filter(i => i.status !== 'paid').reduce((sum, i) => sum + i.total_amount, 0), [invoices])
   
   // Roster checks
-  const lowStockCount = products.filter(p => p.stock_quantity <= (p.min_stock_level || 5)).length
-  const activeStaffCount = staff.filter(s => s.is_active).length
+  const lowStockCount = useMemo(() => products.filter(p => p.stock_quantity <= (p.min_stock_level || 5)).length, [products])
+  const activeStaffCount = useMemo(() => staff.filter(s => s.is_active).length, [staff])
 
   // Live Operations Queue breakdown
-  const todayStr = new Date().toISOString().split('T')[0]
-  const todayAppointments = appointments.filter(a => a.date === todayStr)
-  const queueWaiting = todayAppointments.filter(a => a.status === 'confirmed')
-  const queueArrived = todayAppointments.filter(a => a.status === 'scheduled') // Checked-in / arrived
-  const queueInProgress = todayAppointments.filter(a => a.status === 'in_progress')
-  const queueCompleted = todayAppointments.filter(a => a.status === 'completed')
-  const queueNoShow = todayAppointments.filter(a => a.status === 'no_show')
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const todayAppointments = useMemo(() => appointments.filter(a => a.date === todayStr), [appointments, todayStr])
+  const queueWaiting = useMemo(() => todayAppointments.filter(a => a.status === 'confirmed'), [todayAppointments])
+  const queueArrived = useMemo(() => todayAppointments.filter(a => a.status === 'scheduled'), [todayAppointments])
+  const queueInProgress = useMemo(() => todayAppointments.filter(a => a.status === 'in_progress'), [todayAppointments])
+  const queueCompleted = useMemo(() => todayAppointments.filter(a => a.status === 'completed'), [todayAppointments])
+  const queueNoShow = useMemo(() => todayAppointments.filter(a => a.status === 'no_show'), [todayAppointments])
 
   // Worker specifics
   const myAppointments = appointments.filter(a => a.staff_id === user?.id)
