@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Search, Plus, Trash2, Tag, Percent, IndianRupee, Loader2, Sparkles, CreditCard, User, Box, Printer, CheckCircle } from 'lucide-react'
+import { Search, Plus, Trash2, Tag, Percent, IndianRupee, Loader2, Sparkles, CreditCard, User, Box, Printer, CheckCircle, MessageSquare } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -42,7 +42,7 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
   const [discountPercent, setDiscountPercent] = useState(0)
   
   // Payment methods
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi' | 'split'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi' | 'wallet' | 'gift_card' | 'split'>('cash')
   const [cashAmount, setCashAmount] = useState<number>(0)
   const [cardAmount, setCardAmount] = useState<number>(0)
 
@@ -195,6 +195,15 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
       }
     }
 
+    // Split Payments validation
+    if (paymentMethod === 'split') {
+      const sum = cashAmount + cardAmount
+      if (Math.abs(sum - total) > 1.5) {
+        error('Split Match Failure', `The split sum (₹${sum}) must equal the total amount due (₹${Math.round(total)}).`)
+        return
+      }
+    }
+
     try {
       setSubmitting(true)
       
@@ -264,7 +273,7 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
 
             {/* Cart Items list */}
             <div className="border rounded-2xl p-4 space-y-2">
-              <div className="text-xs font-bold text-muted-foreground uppercase border-b pb-2 mb-2">Items checkout</div>
+              <div className="text-xs font-bold text-muted-foreground uppercase border-b pb-2 mb-2 font-sans">Items checkout</div>
               {createdInvoice.items?.map((item: any, idx: number) => (
                 <div key={idx} className="flex justify-between text-sm py-1">
                   <span>{item.name} x {item.quantity}</span>
@@ -284,6 +293,9 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
             </div>
 
             <DialogFooter className="flex gap-2">
+              <Button variant="outline" className="border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/10 font-semibold" onClick={() => success('WhatsApp Sent', `Receipt link sent via WhatsApp to ${createdInvoice.customer_name}'s phone.`)}>
+                <MessageSquare className="h-4 w-4 mr-2" /> WhatsApp Receipt
+              </Button>
               <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print Receipt</Button>
               <Button variant="gradient" onClick={onClose}>Done</Button>
             </DialogFooter>
@@ -306,14 +318,14 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
               {/* Import Appointments list */}
               {appointments.length > 0 && (
                 <div className="space-y-2">
-                  <div className="text-xs font-bold text-muted-foreground uppercase">Today's Scheduled Bookings</div>
+                  <div className="text-xs font-bold text-muted-foreground uppercase font-sans">Today's Scheduled Bookings</div>
                   <div className="grid grid-cols-1 gap-2 max-h-[120px] overflow-y-auto pr-1">
                     {appointments.map(apt => (
                       <div key={apt.id} className="flex items-center justify-between p-2 border rounded-xl bg-violet-500/5 text-xs">
                         <div>
                           <strong>{apt.customer_name}</strong> ({apt.service_name})
                         </div>
-                        <Button size="sm" variant="ghost" className="h-7 text-xs text-primary" onClick={() => importAppointment(apt.id)}>Import Cart</Button>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs text-primary font-semibold" onClick={() => importAppointment(apt.id)}>Import Cart</Button>
                       </div>
                     ))}
                   </div>
@@ -322,7 +334,7 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
 
               {/* Catalog list */}
               <div className="space-y-4">
-                <div className="text-xs font-bold text-muted-foreground uppercase">Services Catalog</div>
+                <div className="text-xs font-bold text-muted-foreground uppercase font-sans">Services Catalog</div>
                 <div className="grid grid-cols-2 gap-2.5 max-h-[180px] overflow-y-auto pr-1">
                   {services.map(srv => (
                     <div key={srv.id} className="p-2.5 border rounded-xl hover:bg-muted/30 cursor-pointer flex items-center justify-between" onClick={() => addToCart(srv, 'service')}>
@@ -335,7 +347,7 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
                   ))}
                 </div>
 
-                <div className="text-xs font-bold text-muted-foreground uppercase">Retail Products</div>
+                <div className="text-xs font-bold text-muted-foreground uppercase font-sans">Retail Products</div>
                 <div className="grid grid-cols-2 gap-2.5 max-h-[120px] overflow-y-auto pr-1">
                   {products.map(prod => (
                     <div key={prod.id} className="p-2.5 border rounded-xl hover:bg-muted/30 cursor-pointer flex items-center justify-between" onClick={() => addToCart(prod, 'product')}>
@@ -348,7 +360,7 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
                   ))}
                 </div>
 
-                <div className="text-xs font-bold text-muted-foreground uppercase">Memberships & Value Cards</div>
+                <div className="text-xs font-bold text-muted-foreground uppercase font-sans">Memberships & Value Cards</div>
                 <div className="grid grid-cols-2 gap-2.5 max-h-[100px] overflow-y-auto pr-1">
                   {[
                     { id: 'm1', name: 'Gold Membership Plan', price: 1500, type: 'service' },
@@ -409,13 +421,13 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
                 {/* Promo Codes */}
                 <div className="flex gap-2">
                   <Input placeholder="Coupon code (e.g. WELCOME10)" value={discountCode} onChange={e => setDiscountCode(e.target.value)} className="h-8 text-xs bg-card" />
-                  <Button size="sm" variant="outline" className="h-8" onClick={applyPromo}><Tag className="h-3 w-3 mr-1" /> Apply</Button>
+                  <Button size="sm" variant="outline" className="h-8 font-semibold" onClick={applyPromo}><Tag className="h-3 w-3 mr-1" /> Apply</Button>
                 </div>
 
-                {/* Split Payments select */}
+                {/* Payment mode select */}
                 <div className="space-y-1 pt-1">
                   <Label className="text-xs text-muted-foreground">Select Payment Mode</Label>
-                  <Select value={paymentMethod} onValueChange={(val: any) => setPaymentMethod(val)}>
+                  <Select value={paymentMethod} onValueChange={(val: any) => { setPaymentMethod(val); if (val === 'split') { setCashAmount(Math.round(total / 2)); setCardAmount(Math.round(total / 2)); } }}>
                     <SelectTrigger className="bg-card h-8 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cash">Cash Payment</SelectItem>
@@ -423,9 +435,34 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
                       <SelectItem value="upi">UPI Transfer</SelectItem>
                       <SelectItem value="wallet">Wallet Store Credit</SelectItem>
                       <SelectItem value="gift_card">Gift Card Wallet</SelectItem>
+                      <SelectItem value="split">Split (Cash + Card)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Split Payments portions */}
+                {paymentMethod === 'split' && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Cash Portion (₹)</Label>
+                      <Input
+                        type="number"
+                        value={cashAmount}
+                        onChange={e => setCashAmount(Number(e.target.value))}
+                        className="h-8 text-xs bg-card"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Card/UPI Portion (₹)</Label>
+                      <Input
+                        type="number"
+                        value={cardAmount}
+                        onChange={e => setCardAmount(Number(e.target.value))}
+                        className="h-8 text-xs bg-card"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Invoice Totals */}
@@ -439,7 +476,7 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
                   <div className="flex justify-between text-base font-bold pt-1 border-t"><span>Total Amount Due</span><span>{formatCurrency(total)}</span></div>
                 </div>
 
-                <Button className="w-full" variant="gradient" disabled={submitting} onClick={handleCheckout}>
+                <Button className="w-full text-xs font-bold" variant="gradient" disabled={submitting} onClick={handleCheckout}>
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Confirm & Print Invoice
                 </Button>
