@@ -9,7 +9,7 @@ import {
   Database, Search, Download, Trash2, ShieldCheck, Mail, MessageSquare, 
   Settings, Key, AlertCircle, Sparkles, ChevronLeft, ChevronRight, 
   Filter, HelpCircle, Activity, Server, Clock, Plus, LogOut, Check,
-  X, RefreshCw, Layers, Bell, FileText, Lock, Globe, Info, Sliders
+  X, RefreshCw, Layers, Bell, FileText, Lock, Globe, Info, Sliders, Tag
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -213,17 +213,17 @@ export default function SuperAdminDashboard() {
     const active = tenants.filter(t => t.status === 'active')
     const totalMRR = active.reduce((sum, t) => sum + (t.mrr_revenue || 0), 0)
     const totalARR = totalMRR * 12
-    const totalRevenue = 485000 + totalMRR // base + current cycle
-    const trials = tenants.filter(t => t.plan === 'Free' || t.plan === 'Starter').length
+    const totalRevenue = tenants.length === 0 ? 0 : 485000 + totalMRR // base + current cycle
+    const trials = tenants.length === 0 ? 0 : tenants.filter(t => t.plan === 'Free' || t.plan === 'Starter').length
     const activeUsers = active.reduce((sum, t) => sum + (t.active_users || 0), 0)
     
     return {
       mrr: totalMRR,
       arr: totalARR,
       totalRev: totalRevenue,
-      activeCount: active.length,
-      trialsCount: trials,
-      activeUsersToday: activeUsers
+      activeCount: tenants.length === 0 ? 0 : active.length,
+      trialsCount: tenants.length === 0 ? 0 : trials,
+      activeUsersToday: tenants.length === 0 ? 0 : activeUsers
     }
   }, [tenants])
 
@@ -709,36 +709,155 @@ export default function SuperAdminDashboard() {
               {/* Executive Overview KPI Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { title: 'Monthly Recurring (MRR)', val: formatCurrency(overviewStats.mrr), comp: '₹58,000', change: '+8.6%', trend: [42, 48, 52, 58, 61, 63], up: true },
-                  { title: 'Annual Recurring (ARR)', val: formatCurrency(overviewStats.arr), comp: '₹6,96,000', change: '+8.6%', trend: [504, 576, 624, 696, 732, 756], up: true },
-                  { title: 'Active Tenants', val: `${overviewStats.activeCount} Salons`, comp: '4 Salons', change: '+25.0%', trend: [2, 3, 3, 4, 4, 4], up: true },
-                  { title: 'Active Users Today', val: `${overviewStats.activeUsersToday} Users`, comp: '11 Users', change: '+27.2%', trend: [6, 8, 9, 11, 13, 14], up: true }
+                  { title: 'Monthly Recurring (MRR)', val: formatCurrency(overviewStats.mrr), comp: tenants.length === 0 ? '₹0' : '₹58,000', change: tenants.length === 0 ? '0%' : '+8.6%', trend: tenants.length === 0 ? [] : [42, 48, 52, 58, 61, 63], up: true },
+                  { title: 'Annual Recurring (ARR)', val: formatCurrency(overviewStats.arr), comp: tenants.length === 0 ? '₹0' : '₹6,96,000', change: tenants.length === 0 ? '0%' : '+8.6%', trend: tenants.length === 0 ? [] : [504, 576, 624, 696, 732, 756], up: true },
+                  { title: 'Active Tenants', val: `${overviewStats.activeCount} Salons`, comp: tenants.length === 0 ? '0 Salons' : '4 Salons', change: tenants.length === 0 ? '0%' : '+25.0%', trend: tenants.length === 0 ? [] : [2, 3, 3, 4, 4, 4], up: true },
+                  { title: 'Active Users Today', val: `${overviewStats.activeUsersToday} Users`, comp: tenants.length === 0 ? '0 Users' : '11 Users', change: tenants.length === 0 ? '0%' : '+27.2%', trend: tenants.length === 0 ? [] : [6, 8, 9, 11, 13, 14], up: true }
                 ].map((kpi, idx) => (
                   <Card key={idx} className="glass-card flex flex-col justify-between">
                     <CardContent className="p-4 space-y-2">
                       <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{kpi.title}</span>
                       <div className="flex justify-between items-baseline">
                         <h3 className="text-xl font-bold tracking-tight text-foreground">{kpi.val}</h3>
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${kpi.up ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${kpi.up && tenants.length > 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
                           {kpi.change}
                         </span>
                       </div>
                       <div className="text-[9px] text-muted-foreground">Previous: <strong>{kpi.comp}</strong></div>
                       
                       {/* Mini Sparkline Chart */}
-                      <div className="h-6 w-full mt-2 opacity-80">
-                        <svg className="w-full h-full" viewBox="0 0 100 20">
-                          <polyline
-                            fill="none"
-                            stroke="#7c3aed"
-                            strokeWidth="2"
-                            points={kpi.trend.map((val, i) => `${(i * 100) / (kpi.trend.length - 1)}, ${20 - ((val - Math.min(...kpi.trend)) * 16) / (Math.max(...kpi.trend) - Math.min(...kpi.trend) || 1) - 2}`).join(' ')}
-                          />
-                        </svg>
+                      <div className="h-6 w-full mt-2 opacity-80 flex items-center justify-center">
+                        {kpi.trend.length === 0 ? (
+                          <span className="text-[9px] text-muted-foreground/40 font-semibold">No data available</span>
+                        ) : (
+                          <svg className="w-full h-full" viewBox="0 0 100 20">
+                            <polyline
+                              fill="none"
+                              stroke="#7c3aed"
+                              strokeWidth="2"
+                              points={kpi.trend.map((val, i) => `${(i * 100) / (kpi.trend.length - 1)}, ${20 - ((val - Math.min(...kpi.trend)) * 16) / (Math.max(...kpi.trend) - Math.min(...kpi.trend) || 1) - 2}`).join(' ')}
+                            />
+                          </svg>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+
+              {/* Analytics & Distribution Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2 border bg-card">
+                  <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-bold">Monthly Recurring Revenue (MRR) Growth</CardTitle>
+                      <CardDescription className="text-xs">SaaS revenue trends over past 6 cycles.</CardDescription>
+                    </div>
+                    {tenants.length > 0 && (
+                      <span className="text-xs font-bold text-primary flex items-center gap-1"><TrendingUp className="h-4 w-4" /> +14.2% Growth</span>
+                    )}
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {tenants.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center min-h-[140px] text-muted-foreground">
+                        <AlertCircle className="h-8 w-8 mb-2 text-muted-foreground/40" />
+                        <span className="text-xs font-semibold">No data available</span>
+                      </div>
+                    ) : (
+                      <div className="w-full h-44 relative">
+                        {/* Responsive SVG interactive line */}
+                        <svg viewBox="0 0 500 140" className="w-full h-full overflow-visible">
+                          <defs>
+                            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.35" />
+                              <stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            d={`M${linePoints[0].x},110 ` + linePoints.map(p => `L${p.x},${p.y}`).join(' ') + ` L${linePoints[linePoints.length - 1].x},110 Z`}
+                            fill="url(#chartGrad)"
+                          />
+                          <line x1="30" y1="30" x2="470" y2="30" stroke="rgba(255,255,255,0.06)" strokeDasharray="3" />
+                          <line x1="30" y1="70" x2="470" y2="70" stroke="rgba(255,255,255,0.06)" strokeDasharray="3" />
+                          <line x1="30" y1="110" x2="470" y2="110" stroke="rgba(255,255,255,0.06)" />
+
+                          <polyline
+                            fill="none"
+                            stroke="#7c3aed"
+                            strokeWidth="3.5"
+                            points={linePoints.map(p => `${p.x},${p.y}`).join(' ')}
+                          />
+
+                          {linePoints.map((p, idx) => (
+                            <circle
+                              key={idx}
+                              cx={p.x}
+                              cy={p.y}
+                              r={hoveredPoint?.val === p.val ? '7' : '4.5'}
+                              fill={hoveredPoint?.val === p.val ? '#ffffff' : '#7c3aed'}
+                              stroke="#7c3aed"
+                              strokeWidth="2.5"
+                              className="cursor-pointer transition-all duration-150"
+                              onMouseOver={(e) => {
+                                setHoveredPoint({ x: p.x, y: p.y - 12, val: p.val, date: p.date })
+                              }}
+                              onMouseLeave={() => setHoveredPoint(null)}
+                            />
+                          ))}
+                        </svg>
+                        {hoveredPoint && (
+                          <div 
+                            className="absolute bg-card border border-border p-2 rounded-xl shadow-2xl text-[9px] pointer-events-none"
+                            style={{ left: `${(hoveredPoint.x * 100) / 500 - 8}%`, top: `${(hoveredPoint.y * 100) / 140 - 25}%` }}
+                          >
+                            <div className="font-bold text-primary">{hoveredPoint.date}</div>
+                            <div>Value: <strong className="text-foreground">{formatCurrency(Number(hoveredPoint.val))}</strong></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border bg-card">
+                  <CardHeader className="pb-3 border-b">
+                    <CardTitle className="text-sm font-bold">Plan Distribution</CardTitle>
+                    <CardDescription className="text-xs">SaaS subscription spread.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 flex flex-col items-center justify-center">
+                    {tenants.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center min-h-[140px] text-muted-foreground w-full">
+                        <AlertCircle className="h-8 w-8 mb-2 text-muted-foreground/40" />
+                        <span className="text-xs font-semibold">No data available</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="h-32 w-32 relative">
+                          <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                            <circle cx="18" cy="18" r="15.91" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
+                            <circle cx="18" cy="18" r="15.91" fill="none" stroke="#f59e0b" strokeWidth="3" strokeDasharray="20 80" strokeDashoffset="100" />
+                            <circle cx="18" cy="18" r="15.91" fill="none" stroke="#7c3aed" strokeWidth="3" strokeDasharray="40 60" strokeDashoffset="80" />
+                            <circle cx="18" cy="18" r="15.91" fill="none" stroke="#ec4899" strokeWidth="3" strokeDasharray="20 80" strokeDashoffset="40" />
+                            <circle cx="18" cy="18" r="15.91" fill="none" stroke="#3b82f6" strokeWidth="3" strokeDasharray="20 80" strokeDashoffset="20" />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                            <span className="text-lg font-bold text-foreground">
+                              {tenants.filter(t => t.status === 'active').length}
+                            </span>
+                            <span className="text-[8px] text-muted-foreground uppercase font-bold">Active</span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[9px] mt-6 w-full border-t pt-3">
+                          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#f59e0b]" /> Starter: 20%</div>
+                          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#7c3aed]" /> Pro: 40%</div>
+                          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#ec4899]" /> Enterprise: 20%</div>
+                          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[#3b82f6]" /> Free: 20%</div>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Expandable Overview Modules Grid */}
@@ -765,11 +884,11 @@ export default function SuperAdminDashboard() {
                         </div>
                         <div className="border p-3 rounded-xl bg-card">
                           <span className="text-[9px] text-muted-foreground uppercase font-bold">Outstanding Payments</span>
-                          <div className="font-bold text-sm text-rose-500 mt-1">₹6,999</div>
+                          <div className="font-bold text-sm text-rose-500 mt-1">{tenants.length === 0 ? '₹0' : '₹6,999'}</div>
                         </div>
                         <div className="border p-3 rounded-xl bg-card">
                           <span className="text-[9px] text-muted-foreground uppercase font-bold">Failed stripe checkouts</span>
-                          <div className="font-bold text-sm text-rose-500 mt-1">1 Failure</div>
+                          <div className="font-bold text-sm text-rose-500 mt-1">{tenants.length === 0 ? '0 Failures' : '1 Failure'}</div>
                         </div>
                       </div>
                     </CardContent>
@@ -1411,18 +1530,18 @@ export default function SuperAdminDashboard() {
                     <div className="grid grid-cols-2 gap-4 text-center">
                       <div className="border p-3 rounded-xl bg-muted/20">
                         <span className="text-[9px] text-muted-foreground uppercase font-bold">NPS Index</span>
-                        <h4 className="text-xl font-bold text-primary mt-1">78 Score</h4>
+                        <h4 className="text-xl font-bold text-primary mt-1">{tenants.length === 0 ? '0' : '78'} Score</h4>
                       </div>
                       <div className="border p-3 rounded-xl bg-muted/20">
                         <span className="text-[9px] text-muted-foreground uppercase font-bold">Resolution Rate</span>
-                        <h4 className="text-xl font-bold text-emerald-500 mt-1">100%</h4>
+                        <h4 className="text-xl font-bold text-emerald-500 mt-1">{tenants.length === 0 ? '0%' : '100%'}</h4>
                       </div>
                     </div>
                     
                     <div className="space-y-2 border-t pt-3">
                       <div className="flex justify-between items-center">
                         <span>Average Resolution Time:</span>
-                        <strong>1.4 hours</strong>
+                        <strong>{tenants.length === 0 ? '0' : '1.4'} hours</strong>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Open Bug Tickets:</span>
@@ -1430,7 +1549,7 @@ export default function SuperAdminDashboard() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Top Feature Request:</span>
-                        <span className="text-primary font-semibold">Multiple GST rates configurations (+28 votes)</span>
+                        <span className="text-primary font-semibold">{tenants.length === 0 ? 'None' : 'Multiple GST rates configurations (+28 votes)'}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -1446,19 +1565,19 @@ export default function SuperAdminDashboard() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span>Hosting Overhead (Vercel/Supabase):</span>
-                        <strong className="text-rose-500">₹37,350</strong>
+                        <strong className="text-rose-500">{tenants.length === 0 ? '₹0' : '₹37,350'}</strong>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Infrastructure costs (Twilio/SMS):</span>
-                        <strong className="text-rose-500">₹24,900</strong>
+                        <strong className="text-rose-500">{tenants.length === 0 ? '₹0' : '₹24,900'}</strong>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Est. Monthly Net Profit:</span>
-                        <strong className="text-emerald-500 text-sm">{formatCurrency(overviewStats.mrr - 62250)}</strong>
+                        <strong className="text-emerald-500 text-sm">{formatCurrency(tenants.length === 0 ? 0 : overviewStats.mrr - 62250)}</strong>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>GST Tax collected summary:</span>
-                        <strong>18% standard</strong>
+                        <strong>{tenants.length === 0 ? '₹0' : '18% standard'}</strong>
                       </div>
                     </div>
                   </CardContent>
