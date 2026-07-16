@@ -14,6 +14,7 @@ import { ProductRepository } from '@/lib/repositories/repositories'
 import { formatCurrency } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/auth-context'
 import { useToast } from '@/components/ui/toast'
+import { useSettings } from '@/lib/contexts/settings-context'
 
 interface POSCheckoutModalProps {
   isOpen: boolean
@@ -24,6 +25,7 @@ interface POSCheckoutModalProps {
 export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModalProps) {
   const { tenant, user } = useAuth()
   const { success, error } = useToast()
+  const { settings } = useSettings()
   const activeTenantId = tenant?.id || 'demo-tenant-001'
 
   const [loading, setLoading] = useState(true)
@@ -154,13 +156,27 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
     const promoDiscount = (subtotal - discount) * (discountPercent / 100)
     discount += promoDiscount
 
-    let taxable = subtotal - discount
-    let gst = taxable * 0.18 // standard 18% GST
-    let total = taxable + gst
-    return { subtotal, discount, gst, total, membershipDiscountPercent }
+    const taxRate = Number(settings.rate ?? '18') / 100
+    const afterDiscount = subtotal - discount
+    let gst = 0
+    let total = 0
+    let taxable = afterDiscount
+
+    // settings.inclusive indicates inclusive pricing
+    const isInclusive = settings.inclusive ?? true
+    if (isInclusive) {
+      total = afterDiscount
+      gst = afterDiscount - (afterDiscount / (1 + taxRate))
+      taxable = afterDiscount - gst
+    } else {
+      gst = afterDiscount * taxRate
+      total = afterDiscount + gst
+    }
+
+    return { subtotal, discount, gst, total, membershipDiscountPercent, taxable }
   }
 
-  const { subtotal, discount, gst, total, membershipDiscountPercent } = calculateTotals()
+  const { subtotal, discount, gst, total, membershipDiscountPercent, taxable } = calculateTotals()
 
   // Apply Coupon Code
   const applyPromo = async () => {
@@ -221,9 +237,14 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
       const invoicePayload = {
         customer_id: selectedCustomerId === 'walk-in' ? null : selectedCustomerId,
         customer_name: selectedCustomerId === 'walk-in' ? 'Walk-in Customer' : `${customer?.first_name} ${customer?.last_name || ''}`.trim(),
-        items: cartItems,
+        items: cartItems.map(item => ({
+          ...item,
+          total: item.quantity * item.unit_price
+        })),
         payment_method: paymentMethod,
-        discount: discount,
+        discount_amount: discount,
+        tax_amount: gst,
+        total_amount: total,
         status: 'paid',
       }
 
@@ -284,11 +305,11 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
 
             {/* Summary */}
             <div className="space-y-2 border-t pt-4 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(createdInvoice.subtotal)}</span></div>
-              {createdInvoice.discount_amount > 0 && (
-                <div className="flex justify-between text-rose-500"><span>Discount</span><span>-{formatCurrency(createdInvoice.discount_amount)}</span></div>
+              <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(createdInvoice.subtotal || createdInvoice.total_amount - (createdInvoice.tax_amount || 0))}</span></div>
+              {(createdInvoice.discount_amount > 0 || createdInvoice.discount > 0) && (
+                <div className="flex justify-between text-rose-500"><span>Discount</span><span>-{formatCurrency(createdInvoice.discount_amount || createdInvoice.discount)}</span></div>
               )}
-              <div className="flex justify-between text-muted-foreground"><span>GST (18% inclusive)</span><span>{formatCurrency(createdInvoice.tax_amount)}</span></div>
+              <div className="flex justify-between text-muted-foreground"><span>GST ({settings.rate}% {settings.inclusive ? 'inclusive' : 'exclusive'})</span><span>{formatCurrency(createdInvoice.tax_amount || createdInvoice.gst_amount)}</span></div>
               <div className="flex justify-between text-lg font-bold border-t pt-2"><span>Total amount Paid</span><span>{formatCurrency(createdInvoice.total_amount)}</span></div>
             </div>
 
