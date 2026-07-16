@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { IndianRupee, Calendar, Users, CreditCard, Plus, BarChart3, Bot, Settings, ArrowRight, Clock, AlertTriangle, Gift, TrendingUp, Filter, Activity, Star, ShieldAlert, CheckCircle, RefreshCw, ShoppingBag, Eye, EyeOff, Layout, ChevronRight, UserCheck, DollarSign, Wallet, Percent, Printer, Search, Lock, Unlock, MessageSquare, Clipboard, User, Flame } from 'lucide-react'
+import { IndianRupee, Calendar, Users, CreditCard, Plus, BarChart3, Bot, Settings, ArrowRight, Clock, AlertTriangle, Gift, TrendingUp, Filter, Activity, Star, ShieldAlert, CheckCircle, RefreshCw, ShoppingBag, Eye, EyeOff, Layout, ChevronRight, UserCheck, DollarSign, Wallet, Percent, Printer, Search, Lock, Unlock, MessageSquare, Clipboard, User, Flame, Loader2, Award } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
