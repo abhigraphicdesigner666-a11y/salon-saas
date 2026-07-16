@@ -560,6 +560,17 @@ export const AuditRepository = {
     const { data, error } = await supabase.from('audit_logs').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false })
     if (error) throw error
     return data as AuditLog[]
+  },
+  listAll: async (): Promise<AuditLog[]> => {
+    if (isDemoMode) {
+      return getMockTable<AuditLog>('auditLogs', [
+        { id: 'al1', tenant_id: 'system', user_id: 'admin', user_name: 'Super Admin', action: 'backup_complete', entity_type: 'platform', entity_id: 'db', old_values: {}, new_values: {}, ip_address: '127.0.0.1', created_at: '2026-07-16T15:00:00Z' },
+        { id: 'al2', tenant_id: 'demo-tenant-001', user_id: 'st1', user_name: 'Neha Verma', action: 'create_appointment', entity_type: 'appointment', entity_id: 'apt1', old_values: {}, new_values: {}, ip_address: '10.148.225.41', created_at: '2026-07-16T18:32:00Z' }
+      ])
+    }
+    const { data, error } = await supabase.from('audit_logs').select('*').order('created_at', { ascending: false })
+    if (error) throw error
+    return data as AuditLog[]
   }
 }
 
@@ -724,38 +735,97 @@ export const SuperAdminRepository = {
       {
         id: 'demo-tenant-001',
         name: 'GlamStyle Salon & Spa',
+        owner_name: 'Aditya Sen',
         owner_email: 'owner@glamstyle.in',
         plan: 'Professional',
         status: 'active',
         created_at: '2026-05-01T10:00:00Z',
-        active_users: 5,
+        subscription_renewal: '2026-08-01',
+        mrr_revenue: 12000,
+        staff_count: 8,
+        customer_count: 142,
         database_size_mb: 24,
+        storage_used_gb: 1.2,
+        last_login: '2026-07-16T18:30:00Z',
+        health_score: 96,
         limits: { staff: 10, branches: 3, appointments: 500, storage_gb: 5 },
         flags: { ai: true, marketing: true, inventory: true, portal: true }
       },
       {
         id: 'demo-tenant-002',
         name: 'Vercel Hair Cutting Lab',
+        owner_name: 'Guillermo R.',
         owner_email: 'cut@vercel.com',
         plan: 'Starter',
         status: 'active',
         created_at: '2026-06-15T12:00:00Z',
-        active_users: 2,
+        subscription_renewal: '2026-07-28',
+        mrr_revenue: 4000,
+        staff_count: 3,
+        customer_count: 45,
         database_size_mb: 8,
+        storage_used_gb: 0.4,
+        last_login: '2026-07-15T14:22:00Z',
+        health_score: 88,
         limits: { staff: 3, branches: 1, appointments: 150, storage_gb: 2 },
         flags: { ai: false, marketing: false, inventory: true, portal: true }
       },
       {
         id: 'demo-tenant-003',
         name: 'Unpaid Suspended Salon',
+        owner_name: 'Rohan Mehta',
         owner_email: 'badpay@gmail.com',
         plan: 'Professional',
         status: 'suspended',
         created_at: '2026-04-10T11:00:00Z',
-        active_users: 0,
+        subscription_renewal: '2026-05-10',
+        mrr_revenue: 12000,
+        staff_count: 6,
+        customer_count: 98,
         database_size_mb: 18,
+        storage_used_gb: 2.1,
+        last_login: '2026-06-12T09:15:00Z',
+        health_score: 42,
         limits: { staff: 10, branches: 3, appointments: 500, storage_gb: 5 },
         flags: { ai: true, marketing: true, inventory: true, portal: true }
+      },
+      {
+        id: 'demo-tenant-004',
+        name: 'Elite Groomers Club',
+        owner_name: 'Vikram Singh',
+        owner_email: 'vikram@elitegroomers.in',
+        plan: 'Enterprise',
+        status: 'active',
+        created_at: '2026-01-20T08:00:00Z',
+        subscription_renewal: '2027-01-20',
+        mrr_revenue: 35000,
+        staff_count: 24,
+        customer_count: 680,
+        database_size_mb: 112,
+        storage_used_gb: 4.8,
+        last_login: '2026-07-16T20:10:00Z',
+        health_score: 99,
+        limits: { staff: 50, branches: 10, appointments: 2500, storage_gb: 15 },
+        flags: { ai: true, marketing: true, inventory: true, portal: true }
+      },
+      {
+        id: 'demo-tenant-005',
+        name: 'Grace & Glow Beauty Co',
+        owner_name: 'Meera Nair',
+        owner_email: 'meera@graceandglow.com',
+        plan: 'Free',
+        status: 'active',
+        created_at: '2026-07-02T15:00:00Z',
+        subscription_renewal: '2026-08-02',
+        mrr_revenue: 0,
+        staff_count: 2,
+        customer_count: 14,
+        database_size_mb: 2,
+        storage_used_gb: 0.1,
+        last_login: '2026-07-16T11:45:00Z',
+        health_score: 74,
+        limits: { staff: 2, branches: 1, appointments: 50, storage_gb: 1 },
+        flags: { ai: false, marketing: false, inventory: false, portal: true }
       }
     ])
   },
@@ -767,6 +837,9 @@ export const SuperAdminRepository = {
       status: 'active',
       active_users: 1,
       database_size_mb: 1,
+      storage_used_gb: 0.1,
+      health_score: 100,
+      subscription_renewal: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
       created_at: new Date().toISOString(),
       ...tenant
     }
@@ -783,6 +856,70 @@ export const SuperAdminRepository = {
       saveMockTable('tenants', list)
       return list[idx]
     }
+  },
+
+  listPlans: async (): Promise<any[]> => {
+    return getMockTable<any>('saas_plans', [
+      { id: 'p-starter', name: 'Starter Plan', price_monthly: 2999, price_yearly: 29990, trial_days: 14, staff_limit: 3, customer_limit: 150, storage_limit_gb: 2, status: 'active' },
+      { id: 'p-professional', name: 'Professional Plan', price_monthly: 6999, price_yearly: 69990, trial_days: 14, staff_limit: 10, customer_limit: 500, storage_limit_gb: 5, status: 'active' },
+      { id: 'p-enterprise', name: 'Enterprise Plan', price_monthly: 14999, price_yearly: 149990, trial_days: 30, staff_limit: 50, customer_limit: 2500, storage_limit_gb: 15, status: 'active' }
+    ])
+  },
+
+  savePlans: async (plans: any[]): Promise<void> => {
+    saveMockTable('saas_plans', plans)
+  },
+
+  listCoupons: async (): Promise<any[]> => {
+    return getMockTable<any>('saas_coupons', [
+      { id: 'c-welcome', code: 'WELCOME10', discount_percent: 10, expiry_date: '2027-01-01', active: true, usage_limit: 100, uses_count: 12, scope: 'global', tenant_id: null },
+      { id: 'c-festival', code: 'FESTIVAL20', discount_percent: 20, expiry_date: '2026-10-31', active: true, usage_limit: 50, uses_count: 4, scope: 'tenant', tenant_id: 'demo-tenant-001' }
+    ])
+  },
+
+  saveCoupons: async (coupons: any[]): Promise<void> => {
+    saveMockTable('saas_coupons', coupons)
+  },
+
+  getGlobalSettings: async (): Promise<any> => {
+    const list = getMockTable<any>('saas_settings', [
+      {
+        id: 'global-config',
+        name: 'SalonOS SaaS Platform',
+        logo: '',
+        currency: 'INR',
+        language: 'English',
+        tax_rate: '18',
+        gstin: '27AAAAA1111A1Z1',
+        maintenance_mode: false,
+        smtp_host: 'smtp.salonos.io',
+        smtp_port: '587',
+        smtp_user: 'platform-alerts@salonos.io',
+        sms_gateway: 'twilio',
+        sms_api_key: 'SK-TWILIO-MOCK-123456',
+        whatsapp_sender: '+919999999999',
+        system_email_template: 'Hi {{name}}, your subscription renewal is due on {{date}}.',
+        system_sms_template: 'Payment failed for invoice {{invoice}}. Please update details.',
+        system_whatsapp_template: 'Thank you for choosing SalonOS! Welcome on board.'
+      }
+    ])
+    return list[0]
+  },
+
+  saveGlobalSettings: async (settings: any): Promise<void> => {
+    saveMockTable('saas_settings', [settings])
+  },
+
+  factoryResetSaaS: async (): Promise<void> => {
+    if (typeof window === 'undefined') return
+    const keysToRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('salon_ai_')) {
+        keysToRemove.push(key)
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key))
   }
 }
 
