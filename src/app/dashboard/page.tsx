@@ -814,8 +814,4 @@ export default function DashboardHome() {
       </Dialog>
     </div>
   )
-} </div>
-
-    </div>
-  )
 }
