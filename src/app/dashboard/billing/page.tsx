@@ -54,7 +54,7 @@ export default function BillingPage() {
 
   const filtered = invoices.filter(inv => {
     const matchSearch = `${inv.invoice_number} ${inv.customer_name}`.toLowerCase().includes(search.toLowerCase())
-    const matchFilter = filter === 'all' || inv.status === filter
+    const matchFilter = filter === 'all' || inv.status === filter || (filter === 'pending' && inv.status === 'sent')
     return matchSearch && matchFilter
   })
 
@@ -63,7 +63,7 @@ export default function BillingPage() {
   const canExport = permissionHelpers.canExport(role, 'billing')
 
   const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.total_amount, 0)
-  const totalPending = invoices.filter(i => i.status === 'pending' || i.status === 'overdue').reduce((sum, i) => sum + i.total_amount, 0)
+  const totalPending = invoices.filter(i => (i.status as any) === 'pending' || i.status === 'sent' || i.status === 'overdue').reduce((sum, i) => sum + i.total_amount, 0)
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
