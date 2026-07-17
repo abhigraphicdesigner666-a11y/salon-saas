@@ -267,6 +267,27 @@ export const StaffRepository = {
     if (error) throw error
     return data as Staff | null
   },
+  create: async (staffData: Omit<Staff, 'id' | 'created_at' | 'updated_at' | 'rating' | 'total_appointments' | 'revenue_generated'>): Promise<Staff> => {
+    const id = generateId()
+    const record = {
+      id,
+      ...staffData,
+      rating: 4.8,
+      total_appointments: 0,
+      revenue_generated: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    } as Staff
+    if (isDemoMode) {
+      const list = getMockTable<Staff>('staff', seeds.staff)
+      list.push(record)
+      saveMockTable('staff', list)
+      return record
+    }
+    const { data, error } = await supabase.from('profiles').insert(record).select().single()
+    if (error) throw error
+    return data as Staff
+  },
   update: async (id: string, updates: Partial<Staff>): Promise<Staff> => {
     if (isDemoMode) {
       const list = getMockTable<Staff>('staff', seeds.staff)
@@ -490,6 +511,16 @@ export const ProductRepository = {
     if (error) throw error
     return data as Product
   },
+  delete: async (id: string): Promise<void> => {
+    if (isDemoMode) {
+      const list = getMockTable<Product>('products', seeds.products)
+      const filtered = list.filter(p => p.id !== id)
+      saveMockTable('products', filtered)
+      return
+    }
+    const { error } = await supabase.from('products').delete().eq('id', id)
+    if (error) throw error
+  },
   updateStock: async (id: string, change: number): Promise<void> => {
     if (isDemoMode) {
       const list = getMockTable<Product>('products', seeds.products)
@@ -615,9 +646,40 @@ export const NotificationRepository = {
 export const CustomerValueRepository = {
   listMemberships: async (tenantId: string): Promise<any[]> => {
     return getMockTable<any>('memberships', [
-      { id: 'm1', tenant_id: tenantId, name: 'Gold Membership', price: 1500, discount_percent: 15, services_limit: 10, status: 'active' },
-      { id: 'm2', tenant_id: tenantId, name: 'VIP Platinum', price: 3000, discount_percent: 25, services_limit: 99, status: 'active' }
-    ])
+      { id: 'm1', tenant_id: tenantId, name: 'Silver Advance Plan', price: 5000, credit_value: 7000, duration_days: 365, status: 'active' },
+      { id: 'm2', tenant_id: tenantId, name: 'Gold Advance Plan', price: 10000, credit_value: 15000, duration_days: 365, status: 'active' },
+      { id: 'm3', tenant_id: tenantId, name: 'VIP Platinum Plan', price: 20000, credit_value: 32000, duration_days: 365, status: 'active' }
+    ]).filter(m => m.tenant_id === tenantId)
+  },
+
+  createMembership: async (tenantId: string, data: any): Promise<any> => {
+    const list = getMockTable<any>('memberships', [])
+    const newM = {
+      id: generateId(),
+      tenant_id: tenantId,
+      ...data,
+      status: 'active'
+    }
+    list.push(newM)
+    saveMockTable('memberships', list)
+    return newM
+  },
+
+  updateMembership: async (id: string, updates: any): Promise<any> => {
+    const list = getMockTable<any>('memberships', [])
+    const idx = list.findIndex(m => m.id === id)
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...updates }
+      saveMockTable('memberships', list)
+      return list[idx]
+    }
+    throw new Error('Membership plan not found')
+  },
+
+  deleteMembership: async (id: string): Promise<void> => {
+    const list = getMockTable<any>('memberships', [])
+    const filtered = list.filter(m => m.id !== id)
+    saveMockTable('memberships', filtered)
   },
 
   listCustomerPackages: async (tenantId: string): Promise<any[]> => {
