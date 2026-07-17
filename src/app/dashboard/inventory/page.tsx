@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Search, Filter, Box, IndianRupee, Truck, FileText, AlertTriangle, Loader2, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Search, Filter, Box, IndianRupee, Truck, FileText, AlertTriangle, Loader2, Edit2, Trash2, ClipboardList } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,7 @@ import { useToast } from '@/components/ui/toast'
 import { permissionHelpers } from '@/lib/auth/permissions'
 import { InventoryDetailsModal } from '@/components/shared/inventory-details-modal'
 import { POReceiptModal } from '@/components/shared/po-receipt-modal'
+import { EODInventorySummaryModal } from '@/components/shared/eod-inventory-summary-modal'
 import type { Product } from '@/lib/types'
 
 export default function InventoryPage() {
@@ -43,6 +44,7 @@ export default function InventoryPage() {
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [showAddSupplier, setShowAddSupplier] = useState(false)
   const [showAddPO, setShowAddPO] = useState(false)
+  const [showEODSummary, setShowEODSummary] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
 
@@ -79,9 +81,18 @@ export default function InventoryPage() {
     }
     try {
       setSubmitting(true)
+      const payload = {
+        name: productForm.name,
+        sku: productForm.sku,
+        cost_price: Number(productForm.cost_price),
+        selling_price: Number(productForm.price),
+        price: Number(productForm.price),
+        stock_quantity: Number(productForm.stock_quantity),
+        min_stock_level: Number(productForm.reorder_level)
+      }
       await InventoryService.createProduct(
         activeTenantId,
-        productForm,
+        payload,
         user?.id || 'anonymous',
         user ? `${user.first_name} ${user.last_name || ''}` : 'System'
       )
@@ -187,8 +198,13 @@ export default function InventoryPage() {
           <p className="text-muted-foreground">Manage product catalog, suppliers files, POs, and manual adjustments</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowEODSummary(true)} className="h-9 rounded-xl flex items-center gap-1.5 text-xs font-semibold">
+            <ClipboardList className="h-4 w-4" /> EOD Summary
+          </Button>
           {permissionHelpers.canCreate(role, 'inventory') && (
-            <Button variant="gradient" onClick={() => setShowAddProduct(true)}><Plus className="h-4 w-4 mr-2" /> Add Product</Button>
+            <Button variant="gradient" onClick={() => setShowAddProduct(true)} className="h-9 rounded-xl flex items-center gap-1.5 text-xs font-semibold">
+              <Plus className="h-4 w-4" /> Add Product
+            </Button>
           )}
         </div>
       </div>
@@ -401,6 +417,13 @@ export default function InventoryPage() {
         poId={selectedPoId}
         isOpen={!!selectedPoId}
         onClose={() => setSelectedPoId(null)}
+        onSuccess={fetchAllInventoryData}
+      />
+
+      {/* Daily EOD Inventory Summary Modal */}
+      <EODInventorySummaryModal
+        isOpen={showEODSummary}
+        onClose={() => setShowEODSummary(false)}
         onSuccess={fetchAllInventoryData}
       />
 
