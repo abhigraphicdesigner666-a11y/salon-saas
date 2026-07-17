@@ -48,6 +48,22 @@ export const InventoryService = {
     return updated
   },
 
+  deleteProduct: async (id: string, tenantId: string, userId: string, userName: string): Promise<void> => {
+    const original = await ProductRepository.getById(id)
+    await ProductRepository.delete(id)
+
+    await AuditService.log(
+      tenantId,
+      userId,
+      userName,
+      'delete_product',
+      'product',
+      id,
+      { name: original?.name },
+      null
+    )
+  },
+
   adjustStock: async (productId: string, tenantId: string, adjustData: { change: number; reason: string }, userId: string, userName: string): Promise<void> => {
     const p = await ProductRepository.getById(productId)
     if (!p) throw new Error('Product not found')
