@@ -227,7 +227,7 @@ export default function AdvancedReportsPage() {
             col2: p.sku || 'N/A',
             col3: `${p.stock_quantity} in stock`,
             col4: formatCurrency(p.cost_price),
-            col5: formatCurrency(p.price),
+            col5: formatCurrency(p.selling_price),
             amount: p.stock_quantity * p.cost_price,
             raw: p
           }))
@@ -237,16 +237,16 @@ export default function AdvancedReportsPage() {
             kpi1Label: 'Asset Cost Value',
             kpi2: rows.length,
             kpi2Label: 'Products Catalog',
-            kpi3: prodsList.filter(p => p.stock_quantity <= p.reorder_level).length,
+            kpi3: prodsList.filter(p => p.stock_quantity <= (p.min_stock_level || 5)).length,
             kpi3Label: 'Low Stock Alert'
           }
         } else if (activeReportType === 'low_stock') {
-          rows = prodsList.filter(p => p.stock_quantity <= p.reorder_level).map(p => ({
+          rows = prodsList.filter(p => p.stock_quantity <= (p.min_stock_level || 5)).map(p => ({
             id: p.id,
             col1: p.name,
             col2: p.sku || 'N/A',
             col3: `${p.stock_quantity} left`,
-            col4: `Limit: ${p.reorder_level}`,
+            col4: `Limit: ${p.min_stock_level || 5}`,
             col5: p.stock_quantity === 0 ? 'Out of Stock' : 'Low Stock',
             amount: p.stock_quantity * p.cost_price,
             raw: p
@@ -326,8 +326,8 @@ export default function AdvancedReportsPage() {
   const isAuthorized = () => {
     if (role === 'super_admin' || role === 'salon_owner' || role === 'manager') return true
     if (role === 'accountant' && activeCategory === 'financial') return true
-    if (role === 'hr' && activeCategory === 'staff') return true
-    if (role === 'marketing_manager' && activeCategory === 'marketing') return true
+    if ((role as any) === 'hr' && activeCategory === 'staff') return true
+    if ((role as any) === 'marketing_manager' && activeCategory === 'marketing') return true
     return false
   }
 
