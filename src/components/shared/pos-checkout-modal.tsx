@@ -39,6 +39,8 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
 
   // Cart State
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('walk-in')
+  const [walkInName, setWalkInName] = useState('Walk-in Customer')
+  const [walkInPhone, setWalkInPhone] = useState('')
   const [cartItems, setCartItems] = useState<any[]>([])
   const [discountCode, setDiscountCode] = useState('')
   const [discountPercent, setDiscountPercent] = useState(0)
@@ -75,6 +77,8 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
       loadData()
       setCartItems([])
       setSelectedCustomerId('walk-in')
+      setWalkInName('Walk-in Customer')
+      setWalkInPhone('')
       setDiscountPercent(0)
       setDiscountCode('')
       setPaymentMethod('cash')
@@ -236,7 +240,8 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
 
       const invoicePayload = {
         customer_id: selectedCustomerId === 'walk-in' ? null : selectedCustomerId,
-        customer_name: selectedCustomerId === 'walk-in' ? 'Walk-in Customer' : `${customer?.first_name} ${customer?.last_name || ''}`.trim(),
+        customer_name: selectedCustomerId === 'walk-in' ? walkInName : `${customer?.first_name} ${customer?.last_name || ''}`.trim(),
+        customer_phone: selectedCustomerId === 'walk-in' ? walkInPhone : customer?.phone || '',
         items: cartItems.map(item => ({
           ...item,
           total: item.quantity * item.unit_price
@@ -265,6 +270,96 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
     }
   }
 
+  const handlePrintReceipt = () => {
+    if (!createdInvoice) return
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      error('Popups Blocked', 'Please allow popups to print receipts.')
+      return
+    }
+
+    const receiptHtml = `
+      <html>
+        <head>
+          <title>Receipt - ${createdInvoice.invoice_number}</title>
+          <style>
+            @media print {
+              body { margin: 0; padding: 0; background: #fff; color: #000; font-family: 'Courier New', Courier, monospace; font-size: 11px; }
+            }
+            body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0 auto; padding: 10px; color: #000; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .bold { font-weight: bold; }
+            .dashed-line { border-top: 1px dashed #000; margin: 8px 0; }
+            .double-line { border-top: 3px double #000; margin: 8px 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+            th, td { padding: 3px 0; text-align: left; font-size: 10px; }
+            th { border-bottom: 1px dashed #000; }
+            .flex-between { display: flex; justify-content: space-between; }
+            .header-details { font-size: 10px; margin-top: 2px; }
+          </style>
+        </head>
+        <body>
+          <div class="text-center bold" style="font-size: 13px;">${settings.name || 'SALON OS'}</div>
+          <div class="text-center header-details">${settings.address || 'Outlet Address'}</div>
+          <div class="text-center header-details">Tel: ${settings.phone || 'N/A'} | Email: ${settings.email || 'N/A'}</div>
+          ${settings.gstin ? `<div class="text-center header-details">GSTIN: ${settings.gstin}</div>` : ''}
+          
+          <div class="dashed-line"></div>
+          
+          <div class="flex-between"><span>Bill No: ${createdInvoice.invoice_number}</span><span>Date: ${new Date(createdInvoice.created_at).toLocaleDateString()}</span></div>
+          <div class="flex-between"><span>Time: ${new Date(createdInvoice.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span><span>Cashier: ${user ? user.first_name : 'System'}</span></div>
+          <div class="flex-between"><span>Client: ${createdInvoice.customer_name}</span></div>
+          ${createdInvoice.customer_phone ? `<div class="flex-between"><span>Phone: ${createdInvoice.customer_phone}</span></div>` : ''}
+          
+          <div class="dashed-line"></div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th>Item/Service</th>
+                <th class="text-center">Qty</th>
+                <th class="text-right">Price</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${createdInvoice.items.map((item: any) => `
+                <tr>
+                  <td>${item.name || item.description}</td>
+                  <td class="text-center">${item.quantity}</td>
+                  <td class="text-right">₹${item.unit_price}</td>
+                  <td class="text-right">₹${item.total}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <div class="dashed-line"></div>
+          
+          <div class="flex-between"><span>Subtotal:</span><span>₹${createdInvoice.subtotal || (createdInvoice.total_amount - (createdInvoice.tax_amount || 0))}</span></div>
+          ${createdInvoice.discount_amount > 0 ? `<div class="flex-between text-rose-500"><span>Discount:</span><span>-₹${createdInvoice.discount_amount}</span></div>` : ''}
+          <div class="flex-between"><span>GST (18%):</span><span>₹${createdInvoice.tax_amount || 0}</span></div>
+          
+          <div class="double-line"></div>
+          <div class="flex-between bold" style="font-size: 11px;"><span>TOTAL PAID:</span><span>₹${createdInvoice.total_amount}</span></div>
+          <div class="flex-between text-xs"><span>Mode:</span><span class="capitalize">${createdInvoice.payment_method}</span></div>
+          
+          <div class="dashed-line"></div>
+          <div class="text-center bold" style="margin-top: 10px;">THANK YOU FOR YOUR VISIT!</div>
+          <div class="text-center" style="font-size: 9px; margin-top: 2px;">Software powered by SalonAI</div>
+        </body>
+      </html>
+    `
+    printWindow.document.write(receiptHtml)
+    printWindow.document.close()
+    
+    printWindow.onload = function() {
+      printWindow.print();
+      setTimeout(function() { printWindow.close(); }, 500);
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto p-0 text-left">
@@ -282,6 +377,12 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
                 <span className="text-muted-foreground">Billed To:</span>
                 <strong>{createdInvoice.customer_name}</strong>
               </div>
+              {createdInvoice.customer_phone && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Phone:</span>
+                  <strong>{createdInvoice.customer_phone}</strong>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Date:</span>
                 <span>{new Date(createdInvoice.created_at).toLocaleString()}</span>
@@ -317,7 +418,7 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
               <Button variant="outline" className="border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/10 font-semibold" onClick={() => success('WhatsApp Sent', `Receipt link sent via WhatsApp to ${createdInvoice.customer_name}'s phone.`)}>
                 <MessageSquare className="h-4 w-4 mr-2" /> WhatsApp Receipt
               </Button>
-              <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-2" /> Print Receipt</Button>
+              <Button variant="outline" onClick={handlePrintReceipt}><Printer className="h-4 w-4 mr-2" /> Print Receipt</Button>
               <Button variant="gradient" onClick={onClose}>Done</Button>
             </DialogFooter>
           </div>
@@ -419,6 +520,29 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
                     </SelectContent>
                   </Select>
                 </div>
+
+                {selectedCustomerId === 'walk-in' && (
+                  <div className="grid grid-cols-2 gap-2 pt-1 animate-fade-in">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground font-bold">Walk-in Client Name</Label>
+                      <Input
+                        placeholder="Customer Name"
+                        value={walkInName}
+                        onChange={e => setWalkInName(e.target.value)}
+                        className="h-8 text-xs bg-card border-primary/20 focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-muted-foreground font-bold">Walk-in Phone Number</Label>
+                      <Input
+                        placeholder="Phone (e.g. +91 9988776655)"
+                        value={walkInPhone}
+                        onChange={e => setWalkInPhone(e.target.value)}
+                        className="h-8 text-xs bg-card border-primary/20 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Cart list */}
                 <div className="border rounded-2xl bg-card p-3 space-y-2 max-h-[200px] overflow-y-auto">
