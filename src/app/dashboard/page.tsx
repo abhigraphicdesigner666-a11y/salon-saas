@@ -28,6 +28,7 @@ export default function DashboardHome() {
   const { settings } = useSettings()
   const activeTenantId = tenant?.id || 'demo-tenant-001'
   const salonName = settings.name || 'Salon Operating System'
+  const fullName = user ? `${user.first_name} ${user.last_name || ''}` : 'Staff'
 
   // Global State
   const [loading, setLoading] = useState(true)
