@@ -81,16 +81,16 @@ export default function HomePage() {
                 Automate appointments, delight clients, track revenue, and grow with intelligent insights. The all-in-one platform trusted by 50,000+ salons across India.
               </motion.p>
               <motion.div variants={fadeUp} className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/signup">
-                  <Button variant="gradient" size="lg" className="text-base px-8 shadow-xl shadow-violet-500/25">
+                <Button asChild variant="gradient" size="lg" className="text-base px-8 shadow-xl shadow-violet-500/25">
+                  <Link href="/signup">
                     Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/contact">
-                  <Button variant="outline" size="lg" className="text-base px-8">
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="text-base px-8">
+                  <Link href="/contact">
                     Book a Demo
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </motion.div>
               <motion.div variants={fadeUp} className="mt-8 flex items-center gap-6 justify-center lg:justify-start text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5"><Check className="h-4 w-4 text-green-500" /> 14-day free trial</span>
@@ -320,11 +320,11 @@ export default function HomePage() {
                     {annual && (
                       <p className="text-xs text-muted-foreground mt-1">Billed {formatCurrency(plan.price_yearly)}/year</p>
                     )}
-                    <Link href="/signup">
-                      <Button className={`w-full mt-6 ${(plan as any).popular ? 'gradient-primary text-white' : ''}`} variant={(plan as any).popular ? 'default' : 'outline'}>
+                    <Button asChild className={`w-full mt-6 ${(plan as any).popular ? 'gradient-primary text-white' : ''}`} variant={(plan as any).popular ? 'default' : 'outline'}>
+                      <Link href="/signup">
                         Start Free Trial <ChevronRight className="ml-1 h-4 w-4" />
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                     <ul className="mt-6 space-y-3">
                       {plan.features.map((feature) => (
                         <li key={feature} className="flex items-start gap-2 text-sm">
@@ -407,18 +407,18 @@ export default function HomePage() {
             <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
               Join 50,000+ salons already using SalonAI to grow their business. Start your free trial today.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/signup">
-                <Button size="lg" className="bg-white text-violet-700 hover:bg-white/90 text-base px-8 shadow-xl">
-                  Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-base px-8">
-                  Talk to Sales
-                </Button>
-              </Link>
-            </div>
+             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+               <Button asChild size="lg" className="bg-white text-violet-700 hover:bg-white/90 text-base px-8 shadow-xl">
+                 <Link href="/signup">
+                   Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                 </Link>
+               </Button>
+               <Button asChild size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-base px-8">
+                 <Link href="/contact">
+                   Talk to Sales
+                 </Link>
+               </Button>
+             </div>
             <div className="mt-6 flex items-center justify-center gap-4 text-sm text-white/60">
               <span><Shield className="inline h-3.5 w-3.5 mr-1" />Bank-grade security</span>
               <span><Zap className="inline h-3.5 w-3.5 mr-1" />Setup in 30 minutes</span>
