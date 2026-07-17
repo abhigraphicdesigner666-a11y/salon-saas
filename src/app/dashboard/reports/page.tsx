@@ -178,7 +178,7 @@ export default function AdvancedReportsPage() {
           rows = custsList.sort((a, b) => (b.total_spent || 0) - (a.total_spent || 0)).map(c => ({
             id: c.id,
             col1: `${c.first_name} ${c.last_name || ''}`.trim(),
-            col2: c.membership_level || 'Walk-in',
+            col2: (c as any).membership_level || 'Walk-in',
             col3: `${c.total_visits || 0} visits`,
             col4: c.loyalty_points || 0,
             col5: formatDate(c.created_at || new Date().toISOString()),
@@ -197,7 +197,7 @@ export default function AdvancedReportsPage() {
         }
       } else if (activeCategory === 'staff') {
         rows = staffList.map(st => {
-          const apts = aptsList.filter(a => a.stylist_id === st.id)
+          const apts = aptsList.filter(a => a.staff_id === st.id)
           const commission = Math.round((st.revenue_generated || 0) * 0.1)
           return {
             id: st.id,
