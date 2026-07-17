@@ -32,7 +32,7 @@ export const CustomerValueService = {
     await CustomerRepository.update(customerId, {
       membership_level: planData.planName,
       membership_status: 'active',
-    })
+    } as any)
 
     await AuditService.log(
       tenantId,
@@ -41,7 +41,7 @@ export const CustomerValueService = {
       'subscribe_membership',
       'customer_membership',
       customerId,
-      { original_membership: customer.membership_level || 'none' },
+      { original_membership: (customer as any).membership_level || 'none' },
       { plan_name: planData.planName, discount_percent: planData.discountPercent }
     )
 
@@ -58,8 +58,8 @@ export const CustomerValueService = {
     const customer = await CustomerRepository.getById(customerId)
     if (!customer) throw new Error('Customer profile not found')
 
-    const newStatus = customer.membership_status === 'frozen' ? 'active' : 'frozen'
-    await CustomerRepository.update(customerId, { membership_status: newStatus })
+    const newStatus = (customer as any).membership_status === 'frozen' ? 'active' : 'frozen'
+    await CustomerRepository.update(customerId, { membership_status: newStatus } as any)
 
     await AuditService.log(
       tenantId,
@@ -68,7 +68,7 @@ export const CustomerValueService = {
       'freeze_membership',
       'customer_membership',
       customerId,
-      { original_status: customer.membership_status || 'active' },
+      { original_status: (customer as any).membership_status || 'active' },
       { new_status: newStatus }
     )
 
@@ -99,7 +99,7 @@ export const CustomerValueService = {
       'adjust_wallet',
       'customer_wallet',
       customerId,
-      { original_balance: customer.wallet_balance || 0 },
+      { original_balance: (customer as any).wallet_balance || 0 },
       { change: adjustData.change, reason: adjustData.reason }
     )
 
