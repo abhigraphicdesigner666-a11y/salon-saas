@@ -304,8 +304,8 @@ export default function HomePage() {
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger} className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {SUBSCRIPTION_PLANS.map((plan) => (
               <motion.div key={plan.id} variants={fadeUp}>
-                <Card className={`h-full relative ${plan.popular ? 'border-primary shadow-xl shadow-primary/10 scale-105' : ''}`}>
-                  {plan.popular && (
+                <Card className={`h-full relative ${(plan as any).popular ? 'border-primary shadow-xl shadow-primary/10 scale-105' : ''}`}>
+                  {(plan as any).popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <Badge className="gradient-primary text-white border-0 shadow-lg">Most Popular</Badge>
                     </div>
@@ -321,7 +321,7 @@ export default function HomePage() {
                       <p className="text-xs text-muted-foreground mt-1">Billed {formatCurrency(plan.price_yearly)}/year</p>
                     )}
                     <Link href="/signup">
-                      <Button className={`w-full mt-6 ${plan.popular ? 'gradient-primary text-white' : ''}`} variant={plan.popular ? 'default' : 'outline'}>
+                      <Button className={`w-full mt-6 ${(plan as any).popular ? 'gradient-primary text-white' : ''}`} variant={(plan as any).popular ? 'default' : 'outline'}>
                         Start Free Trial <ChevronRight className="ml-1 h-4 w-4" />
                       </Button>
                     </Link>
