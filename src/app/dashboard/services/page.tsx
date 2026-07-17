@@ -140,8 +140,8 @@ export default function ServicesPage() {
       {/* Reusable Service Configuration Modal */}
       <ServiceDetailsModal
         serviceId={selectedServiceId}
-        isOpen={!!selectedServiceId}
-        onClose={() => setSelectedServiceId(null)}
+        isOpen={showAdd || !!selectedServiceId}
+        onClose={() => { setSelectedServiceId(null); setShowAdd(false); }}
         onSuccess={fetchServices}
       />
     </motion.div>
