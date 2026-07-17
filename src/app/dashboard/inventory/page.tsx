@@ -152,8 +152,8 @@ export default function InventoryPage() {
   })
 
   // KPI Calculations
-  const totalValue = products.reduce((sum, p) => sum + ((p.cost_price || p.price * 0.6) * p.stock_quantity), 0)
-  const lowStockCount = products.filter(p => p.stock_quantity <= (p.reorder_level || 5)).length
+  const totalValue = products.reduce((sum, p) => sum + ((p.cost_price || p.selling_price * 0.6) * p.stock_quantity), 0)
+  const lowStockCount = products.filter(p => p.stock_quantity <= (p.min_stock_level || 5)).length
   const outOfStockCount = products.filter(p => p.stock_quantity === 0).length
 
   return (
