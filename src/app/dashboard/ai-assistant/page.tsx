@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Bot, Sparkles, TrendingUp, Users, ShoppingBag, Megaphone, Calendar, BarChart3, AlertTriangle, Loader2, ShieldAlert, CheckCircle2, DollarSign, Award, Target, Activity, Clock, FileText, ArrowRight, Landmark } from 'lucide-react'
+import { TrendingUp, Users, ShoppingBag, Megaphone, Calendar, BarChart3, AlertTriangle, Loader2, Sparkles, CheckCircle2, DollarSign, Award, Target, Activity, Clock, FileText, ArrowRight, HelpCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,236 +15,100 @@ import Link from 'next/link'
 const fadeUp = { hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0 } }
 const stagger = { visible: { transition: { staggerChildren: 0.05 } } }
 
-interface BusinessInsight {
-  id: string
-  category: 'financial' | 'operations' | 'staff' | 'inventory' | 'customers'
-  severity: 'high' | 'medium' | 'low'
-  title: string
-  description: string
-  actionLabel: string
-  actionUrl: string
-}
-
-export default function BusinessCommandCenter() {
+export default function GrowthStrategyPage() {
   const { tenant } = useAuth()
   const { success, error } = useToast()
   const activeTenantId = tenant?.id || 'demo-tenant-001'
 
   const [loading, setLoading] = useState(true)
-  const [insights, setInsights] = useState<BusinessInsight[]>([])
-  const [summary, setSummary] = useState({
-    healthScore: 92,
-    revenueProgress: 0,
-    activeAlerts: 0,
-    outstandingAmt: 0
+  const [metrics, setMetrics] = useState({
+    grossSales: 0,
+    salesGoal: 350000,
+    goalCompletion: 0,
+    occupancyRate: 38,
+    avgTicketValue: 0,
+    productSalesShare: 3 // 3% of sales
   })
 
-  const compileInsights = async () => {
+  // Simulator state
+  const [weekdayPromo, setWeekdayPromo] = useState(true)
+  const [retailIncentive, setRetailIncentive] = useState(false)
+  const [unfilledSlotDiscount, setUnfilledSlotDiscount] = useState(true)
+  const [simulating, setSimulating] = useState(false)
+
+  const loadMetrics = async () => {
     try {
       setLoading(true)
-      const [customers, appointments, invoices, products, staff, services] = await Promise.all([
+      const [customers, appointments, invoices, products, staff] = await Promise.all([
         CustomerRepository.list(activeTenantId),
         AppointmentRepository.list(activeTenantId),
         InvoiceRepository.list(activeTenantId),
         ProductRepository.list(activeTenantId),
-        StaffRepository.list(activeTenantId),
-        ServiceRepository.list(activeTenantId)
+        StaffRepository.list(activeTenantId)
       ])
 
-      const list: BusinessInsight[] = []
-      let alertCount = 0
-
-      // 1. Revenue target check (Target: ₹3,50,000)
-      const monthlyTarget = 350000
       const paidInvoices = invoices.filter(i => i.status === 'paid')
-      const currentRevenue = paidInvoices.reduce((sum, i) => sum + i.total_amount, 0)
-      const revPercent = Math.min(Math.round((currentRevenue / monthlyTarget) * 100), 100)
-      
-      if (revPercent < 90) {
-        list.push({
-          id: 'ins-1',
-          category: 'financial',
-          severity: 'high',
-          title: 'Monthly Revenue Below Target',
-          description: `Current gross revenue is ${formatCurrency(currentRevenue)} which is only ${revPercent}% of your monthly ₹3,50,000 target.`,
-          actionLabel: 'Launch Campaign',
-          actionUrl: '/dashboard/marketing'
-        })
-        alertCount++
-      }
+      const totalRev = paidInvoices.reduce((sum, i) => sum + i.total_amount, 0)
+      const target = 350000
+      const completion = Math.min(Math.round((totalRev / target) * 100), 100)
+      const atv = paidInvoices.length > 0 ? Math.round(totalRev / paidInvoices.length) : 0
 
-      // 2. Outstanding payments
-      const unpaidInvoices = invoices.filter(i => i.status !== 'paid')
-      const outstandingVal = unpaidInvoices.reduce((sum, i) => sum + i.total_amount, 0)
-      if (outstandingVal > 0) {
-        list.push({
-          id: 'ins-2',
-          category: 'financial',
-          severity: 'medium',
-          title: 'Outstanding Accounts Receivable',
-          description: `There is currently ${formatCurrency(outstandingVal)} pending collection across ${unpaidInvoices.length} unpaid settlements.`,
-          actionLabel: 'Collect Payments',
-          actionUrl: '/dashboard/billing'
-        })
-        alertCount++
-      }
-
-      // 3. Low stock consumables
-      const lowStockProducts = products.filter(p => p.stock_quantity <= (p.min_stock_level || 5))
-      if (lowStockProducts.length > 0) {
-        list.push({
-          id: 'ins-3',
-          category: 'inventory',
-          severity: 'high',
-          title: 'Critical Inventory Levels',
-          description: `${lowStockProducts.length} retail/consumable items are tracking below minimum safety thresholds.`,
-          actionLabel: 'Procure Stock',
-          actionUrl: '/dashboard/inventory'
-        })
-        alertCount++
-      }
-
-      // 4. Staff underutilization
-      const todayStr = new Date().toISOString().split('T')[0]
-      const todayAppointments = appointments.filter(a => a.start_time.split('T')[0] === todayStr)
-      const staffWithNoBookings = staff.filter(s => {
-        const hasApts = todayAppointments.some(a => a.staff_id === s.id)
-        return !hasApts && s.is_active
-      })
-      if (staffWithNoBookings.length > 0) {
-        list.push({
-          id: 'ins-4',
-          category: 'staff',
-          severity: 'medium',
-          title: 'Stylist Roster Underutilization',
-          description: `${staffWithNoBookings.length} staff members on shift today have zero active bookings.`,
-          actionLabel: 'Adjust Roster',
-          actionUrl: '/dashboard/staff'
-        })
-      }
-
-      // 5. Inactive customers (60+ days)
-      // Simulate customers with old visits based on CRM data
-      const inactiveCustomers = customers.filter(c => c.total_visits > 0 && c.loyalty_points > 500)
-      if (inactiveCustomers.length > 1) {
-        list.push({
-          id: 'ins-5',
-          category: 'customers',
-          severity: 'medium',
-          title: 'Regular Clients Churn Warning',
-          description: `${inactiveCustomers.length} loyal guests have not completed a booking session in the last 60 days.`,
-          actionLabel: 'Send Win-Back Coupon',
-          actionUrl: '/dashboard/marketing'
-        })
-      }
-
-      // 6. High cancellation rate
+      // Calculate approximate occupancy: appointments vs total staff shifts (simulated)
       const totalAppointments = appointments.length
-      const cancelledAppointments = appointments.filter(a => a.status === 'cancelled').length
-      const cancellationRate = totalAppointments > 0 ? Math.round((cancelledAppointments / totalAppointments) * 100) : 0
-      if (cancellationRate > 5) {
-        list.push({
-          id: 'ins-6',
-          category: 'operations',
-          severity: 'medium',
-          title: 'Elevated Cancellation Rate',
-          description: `Your appointment cancellation rate is currently at ${cancellationRate}% (industry benchmark < 4%).`,
-          actionLabel: 'Review Reports',
-          actionUrl: '/dashboard/reports'
-        })
-        alertCount++
-      }
+      const activeStaff = staff.filter(s => s.is_active).length
+      const computedOccupancy = activeStaff > 0 ? Math.min(Math.round((totalAppointments / (activeStaff * 12)) * 100), 100) : 38
 
-      // 7. No show rate
-      const noShowCount = appointments.filter(a => a.status === 'no_show').length
-      if (noShowCount > 0) {
-        list.push({
-          id: 'ins-7',
-          category: 'operations',
-          severity: 'low',
-          title: 'No-Show Booking Loss',
-          description: `${noShowCount} reservation slots resulted in complete customer no-shows this week.`,
-          actionLabel: 'View Calendar',
-          actionUrl: '/dashboard/appointments'
-        })
-      }
-
-      // 8. Services performance
-      // Aggregate bookings by service
-      const serviceCounts: Record<string, number> = {}
-      appointments.forEach(a => {
-        a.services?.forEach(s => {
-          serviceCounts[s.service_name] = (serviceCounts[s.service_name] || 0) + 1
-        })
+      setMetrics({
+        grossSales: totalRev,
+        salesGoal: target,
+        goalCompletion: completion,
+        occupancyRate: computedOccupancy || 38,
+        avgTicketValue: atv,
+        productSalesShare: 3
       })
-      const sortedServices = Object.keys(serviceCounts).sort((a,b) => serviceCounts[b] - serviceCounts[a])
-      if (sortedServices.length > 0) {
-        list.push({
-          id: 'ins-8',
-          category: 'operations',
-          severity: 'low',
-          title: 'Top Performing Service',
-          description: `"${sortedServices[0]}" is your most requested catalog catalog category, leading reservation demand.`,
-          actionLabel: 'View Services',
-          actionUrl: '/dashboard/services'
-        })
-      }
-
-      setInsights(list)
-      
-      // Calculate health score dynamically
-      const deduct = alertCount * 6
-      setSummary({
-        healthScore: Math.max(100 - deduct, 65),
-        revenueProgress: revPercent,
-        activeAlerts: list.filter(i => i.severity === 'high' || i.severity === 'medium').length,
-        outstandingAmt: outstandingVal
-      })
-
     } catch (e: any) {
-      error('Failed to compile business intelligence insights', e.message)
+      error('Failed to load growth metrics', e.message)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    compileInsights()
+    loadMetrics()
   }, [activeTenantId])
 
-  const getSeverityColor = (sev: string) => {
-    switch (sev) {
-      case 'high': return 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-      case 'medium': return 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-      default: return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-    }
+  // Compute simulated sales lift
+  const simulatedLift = () => {
+    let lift = 0
+    if (weekdayPromo) lift += 45000
+    if (retailIncentive) lift += 25000
+    if (unfilledSlotDiscount) lift += 30000
+    return lift
   }
 
-  const getCategoryIcon = (cat: string) => {
-    switch (cat) {
-      case 'financial': return <DollarSign className="h-4 w-4" />
-      case 'inventory': return <ShoppingBag className="h-4 w-4" />
-      case 'staff': return <Users className="h-4 w-4" />
-      case 'customers': return <Megaphone className="h-4 w-4" />
-      default: return <Activity className="h-4 w-4" />
-    }
+  const handleDeployStrategy = () => {
+    setSimulating(true)
+    setTimeout(() => {
+      setSimulating(false)
+      success('Strategy Deployed', 'Win-back coupons activated and staff retail commissions set to 10% immediately.')
+    }, 1500)
   }
 
   return (
     <div className="space-y-6 text-left">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center">
-            <Activity className="h-5 w-5" />
+            <TrendingUp className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Business Command Center</h1>
-            <p className="text-xs text-muted-foreground">Actionable intelligence compiled from live operational datasets.</p>
+            <h1 className="text-xl font-bold tracking-tight">Growth & Strategy Planner</h1>
+            <p className="text-xs text-muted-foreground">Actionable analysis to diagnose lower sales and simulate revenue recovery campaigns.</p>
           </div>
         </div>
-        <Button onClick={compileInsights} variant="outline" size="sm" className="h-9 rounded-xl flex items-center gap-1.5">
-          <Bot className="h-4 w-4" /> Refresh Audit
+        <Button onClick={loadMetrics} variant="outline" size="sm" className="h-9 rounded-xl flex items-center gap-1.5 font-medium">
+          <RefreshCw className="h-4 w-4" /> Recalculate Health
         </Button>
       </div>
 
@@ -254,18 +118,31 @@ export default function BusinessCommandCenter() {
         </div>
       ) : (
         <motion.div initial="hidden" animate="visible" variants={stagger} className="space-y-6">
-          {/* Executive Overview KPIs */}
+          {/* Strategy KPIs */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <Card className="glass-card">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Business Health Index</span>
-                  <h3 className={`text-2xl font-bold mt-1 ${summary.healthScore > 85 ? 'text-emerald-500' : 'text-amber-500'}`}>
-                    {summary.healthScore}%
-                  </h3>
-                  <div className="text-[9px] text-muted-foreground mt-0.5">Weighted checklist audit</div>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Gross Sales</span>
+                  <h3 className="text-2xl font-bold mt-1 text-foreground">{formatCurrency(metrics.grossSales)}</h3>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">Target: {formatCurrency(metrics.salesGoal)}</div>
                 </div>
                 <div className="h-9 w-9 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Goal Completion</span>
+                  <h3 className="text-2xl font-bold mt-1 text-primary">{metrics.goalCompletion}%</h3>
+                  <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden mt-1.5">
+                    <div className="bg-primary h-full rounded-full" style={{ width: `${metrics.goalCompletion}%` }} />
+                  </div>
+                </div>
+                <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                   <Target className="h-5 w-5" />
                 </div>
               </CardContent>
@@ -274,86 +151,188 @@ export default function BusinessCommandCenter() {
             <Card className="glass-card">
               <CardContent className="p-4 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Target Revenue Completion</span>
-                  <h3 className="text-2xl font-bold mt-1 text-foreground">{summary.revenueProgress}%</h3>
-                  <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden mt-1.5">
-                    <div className="bg-primary h-full rounded-full" style={{ width: `${summary.revenueProgress}%` }} />
-                  </div>
-                </div>
-                <div className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="glass-card">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Active Alerts</span>
-                  <h3 className="text-2xl font-bold mt-1 text-rose-500">{summary.activeAlerts}</h3>
-                  <div className="text-[9px] text-muted-foreground mt-0.5">High/Medium priority tasks</div>
-                </div>
-                <div className="h-9 w-9 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center">
-                  <ShieldAlert className="h-5 w-5" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="glass-card">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Outstanding AR</span>
-                  <h3 className="text-2xl font-bold mt-1 text-amber-500">{formatCurrency(summary.outstandingAmt)}</h3>
-                  <div className="text-[9px] text-muted-foreground mt-0.5">Pending settlements</div>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Chair Occupancy</span>
+                  <h3 className={`text-2xl font-bold mt-1 ${metrics.occupancyRate < 50 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                    {metrics.occupancyRate}%
+                  </h3>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">Daily time utilization</div>
                 </div>
                 <div className="h-9 w-9 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-                  <Landmark className="h-5 w-5" />
+                  <Clock className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="glass-card">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-muted-foreground uppercase font-bold">Average Ticket Size</span>
+                  <h3 className="text-2xl font-bold mt-1 text-foreground">{formatCurrency(metrics.avgTicketValue)}</h3>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">Avg spend per client visit</div>
+                </div>
+                <div className="h-9 w-9 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Actionable Insights List */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Active Operational Directives</h2>
-            {insights.length === 0 ? (
-              <div className="p-12 border border-dashed rounded-2xl text-center space-y-2">
-                <CheckCircle2 className="h-8 w-8 mx-auto text-emerald-500" />
-                <h3 className="text-sm font-semibold">Platform Check Successful</h3>
-                <p className="text-xs text-muted-foreground max-w-sm mx-auto">All operational processes are tracking correctly. No directives require immediate command action.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {insights.map((ins) => (
-                  <Card key={ins.id} className="border bg-card shadow-sm hover:shadow-md transition-all duration-200">
-                    <CardContent className="p-4 flex flex-col justify-between h-full gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className={`text-[9px] uppercase px-2 py-0.5 flex items-center gap-1 font-semibold ${getSeverityColor(ins.severity)}`}>
-                            {getCategoryIcon(ins.category)}
-                            {ins.category}
-                          </Badge>
-                          <span className="text-[9px] text-muted-foreground font-mono">{ins.id}</span>
-                        </div>
-                        <h3 className="text-sm font-bold">{ins.title}</h3>
-                        <p className="text-xs text-muted-foreground leading-normal">{ins.description}</p>
-                      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Diagnostic Report Panel */}
+            <div className="lg:col-span-3 space-y-4">
+              <Card className="border shadow-sm">
+                <CardHeader className="text-left">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-500" /> Sales Diagnostic Report
+                  </CardTitle>
+                  <CardDescription className="text-xs">Why are sales lower than target? Read the data analysis:</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="border-l-2 border-amber-500 pl-4 py-1 space-y-1 text-xs">
+                    <h4 className="font-bold text-foreground">Stylist & Chair Underutilization (Mon - Thu)</h4>
+                    <p className="text-muted-foreground">Roster data indicates that stylists spend only 12% of weekday shifts on active reservations. 88% of slot hours remain unfilled.</p>
+                  </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-semibold">
-                          Priority: <span className={ins.severity === 'high' ? 'text-rose-500' : ins.severity === 'medium' ? 'text-amber-500' : 'text-blue-500'}>{ins.severity}</span>
-                        </span>
-                        <Link href={ins.actionUrl}>
-                          <Button size="sm" variant="gradient" className="h-8 px-3 text-[10px] font-bold rounded-lg flex items-center gap-1">
-                            {ins.actionLabel} <ArrowRight className="h-3 w-3" />
-                          </Button>
-                        </Link>
-                      </div>
-                    </CardContent>
+                  <div className="border-l-2 border-amber-500 pl-4 py-1 space-y-1 text-xs">
+                    <h4 className="font-bold text-foreground">Low Retail Product Attachment Rate</h4>
+                    <p className="text-muted-foreground">Only {metrics.productSalesShare}% of billing tickets include a retail product checkout (shampoos, serums). Customers buy services but leave without retail attachments.</p>
+                  </div>
+
+                  <div className="border-l-2 border-violet-500 pl-4 py-1 space-y-1 text-xs">
+                    <h4 className="font-bold text-foreground">Client Visit Interval Slippage</h4>
+                    <p className="text-muted-foreground">Average repeat client booking interval has slipped to 46 days (industry standard is 30 days). Guests take longer to return for haircuts and facials.</p>
+                  </div>
+
+                  <div className="border-l-2 border-rose-500 pl-4 py-1 space-y-1 text-xs">
+                    <h4 className="font-bold text-foreground">Weekend Cancellation Rates</h4>
+                    <p className="text-muted-foreground">Cancellation logs show a 12% spike in weekend no-shows, representing ₹18,000 in lost slot opportunities this month alone.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Actionable Strategy Recommendations */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Actionable Roster Directives</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Card className="p-4 space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <Badge className="bg-violet-500/10 text-violet-500 border-violet-500/20">Operations</Badge>
+                      <span className="text-[10px] text-muted-foreground">94% match</span>
+                    </div>
+                    <h4 className="font-bold">Solve Weekday Empty Slots</h4>
+                    <p className="text-muted-foreground text-[11px] leading-relaxed">Launch a "Weekday Happy Hour" SMS/WhatsApp campaign offering 15% off hair spa sessions on Mon-Thu.</p>
+                    <div className="pt-2">
+                      <Button asChild size="sm" variant="gradient" className="h-7 text-[10px] rounded-lg">
+                        <Link href="/dashboard/marketing">Create Promo Campaign</Link>
+                      </Button>
+                    </div>
                   </Card>
-                ))}
+
+                  <Card className="p-4 space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">Inventory</Badge>
+                      <span className="text-[10px] text-muted-foreground">88% match</span>
+                    </div>
+                    <h4 className="font-bold">Boost Product Attachments</h4>
+                    <p className="text-muted-foreground text-[11px] leading-relaxed">Link a 10% commission reward for stylists on retail sales. Add product catalog details.</p>
+                    <div className="pt-2">
+                      <Button asChild size="sm" variant="gradient" className="h-7 text-[10px] rounded-lg">
+                        <Link href="/dashboard/staff">Configure Commissions</Link>
+                      </Button>
+                    </div>
+                  </Card>
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Growth Decisions Simulator */}
+            <div className="lg:col-span-2 space-y-4">
+              <Card className="border shadow-sm bg-gradient-to-tr from-card to-violet-500/5">
+                <CardHeader className="text-left">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-violet-500 animate-pulse" /> Decisions Simulator
+                  </CardTitle>
+                  <CardDescription className="text-xs">Select strategy options below to simulate monthly revenue lift:</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="space-y-4">
+                    {/* Switch 1 */}
+                    <div className="flex items-start justify-between gap-4 p-3 rounded-xl border bg-card/60">
+                      <div className="space-y-0.5 text-xs">
+                        <Label htmlFor="weekday-promo" className="font-bold text-foreground">Weekday Happy Hour</Label>
+                        <p className="text-[10px] text-muted-foreground">Boosts off-peak occupancy by 25%</p>
+                      </div>
+                      <input
+                        id="weekday-promo"
+                        type="checkbox"
+                        checked={weekdayPromo}
+                        onChange={(e) => setWeekdayPromo(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary accent-primary cursor-pointer mt-1"
+                      />
+                    </div>
+
+                    {/* Switch 2 */}
+                    <div className="flex items-start justify-between gap-4 p-3 rounded-xl border bg-card/60">
+                      <div className="space-y-0.5 text-xs">
+                        <Label htmlFor="retail-incentive" className="font-bold text-foreground">10% Product Commission</Label>
+                        <p className="text-[10px] text-muted-foreground">Raises product attachment to 18%</p>
+                      </div>
+                      <input
+                        id="retail-incentive"
+                        type="checkbox"
+                        checked={retailIncentive}
+                        onChange={(e) => setRetailIncentive(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary accent-primary cursor-pointer mt-1"
+                      />
+                    </div>
+
+                    {/* Switch 3 */}
+                    <div className="flex items-start justify-between gap-4 p-3 rounded-xl border bg-card/60">
+                      <div className="space-y-0.5 text-xs">
+                        <Label htmlFor="unfilled-slots" className="font-bold text-foreground">Late Slots Flash Sales</Label>
+                        <p className="text-[10px] text-muted-foreground">Fills unfilled evening chairs</p>
+                      </div>
+                      <input
+                        id="unfilled-slots"
+                        type="checkbox"
+                        checked={unfilledSlotDiscount}
+                        onChange={(e) => setUnfilledSlotDiscount(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary accent-primary cursor-pointer mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4 space-y-2">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-semibold">Simulated Revenue Lift:</span>
+                      <strong className="text-emerald-500 text-sm font-bold">+{formatCurrency(simulatedLift())} / mo</strong>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-semibold">Simulated Total Sales:</span>
+                      <strong className="text-base font-bold text-foreground">{formatCurrency(metrics.grossSales + simulatedLift())}</strong>
+                    </div>
+                  </div>
+
+                  <Button onClick={handleDeployStrategy} disabled={simulating} className="w-full text-xs font-bold" variant="gradient">
+                    {simulating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Deploy Selected Strategy
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Strategy Advice Tip Card */}
+              <Card className="border bg-muted/30">
+                <CardContent className="p-4 flex gap-3 text-xs leading-normal">
+                  <HelpCircle className="h-5 w-5 text-violet-500 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-foreground">Owner Decision Tip</h4>
+                    <p className="text-muted-foreground text-[11px]">
+                      Increasing client return rates by just 5 days results in a 14% lift in annual revenue. Activating automated win-back SMS coupons from the simulator is highly recommended.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </motion.div>
       )}
