@@ -1,4 +1,4 @@
-import { CustomerRepository } from '@/lib/repositories/repositories'
+import { CustomerRepository, CustomerValueRepository } from '@/lib/repositories/repositories'
 import type { Customer } from '@/lib/types'
 import { AuditService } from './audit-service'
 import { NotificationService } from './notification-service'
@@ -151,5 +151,26 @@ export const CustomerService = {
       { first_name: original?.first_name },
       null
     )
+  },
+
+  listMemberships: async (tenantId: string): Promise<any[]> => {
+    return await CustomerValueRepository.listMemberships(tenantId)
+  },
+
+  createMembership: async (tenantId: string, data: any, userId: string, userName: string): Promise<any> => {
+    const newM = await CustomerValueRepository.createMembership(tenantId, data)
+    await AuditService.log(tenantId, userId, userName, 'create_membership_plan', 'membership', newM.id, null, data)
+    return newM
+  },
+
+  updateMembership: async (id: string, tenantId: string, updates: any, userId: string, userName: string): Promise<any> => {
+    const updated = await CustomerValueRepository.updateMembership(id, updates)
+    await AuditService.log(tenantId, userId, userName, 'update_membership_plan', 'membership', id, null, updates)
+    return updated
+  },
+
+  deleteMembership: async (id: string, tenantId: string, userId: string, userName: string): Promise<void> => {
+    await CustomerValueRepository.deleteMembership(id)
+    await AuditService.log(tenantId, userId, userName, 'delete_membership_plan', 'membership', id, null, null)
   }
 }
