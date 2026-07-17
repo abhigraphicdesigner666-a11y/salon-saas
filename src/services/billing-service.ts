@@ -110,8 +110,8 @@ export const BillingService = {
     const updated = await InvoiceRepository.updateStatus(invoiceId, 'refunded', `Refund: ${refundData.reason}`)
 
     for (const item of invoice.items) {
-      if (item.type === 'product' && item.id) {
-        await ProductRepository.updateStock(item.id, item.quantity)
+      if (((item as any).type === 'product' || item.product_id) && (item.product_id || item.id)) {
+        await ProductRepository.updateStock(item.product_id || item.id, item.quantity)
       }
     }
 
