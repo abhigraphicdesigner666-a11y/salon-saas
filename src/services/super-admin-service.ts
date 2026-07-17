@@ -166,5 +166,15 @@ export const SuperAdminService = {
   factoryReset: async (): Promise<void> => {
     const { SuperAdminRepository } = require('@/lib/repositories/repositories')
     await SuperAdminRepository.factoryResetSaaS()
+  },
+
+  listExpenses: async (): Promise<any[]> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    return SuperAdminRepository.listExpenses()
+  },
+
+  saveExpenses: async (expenses: any[]): Promise<void> => {
+    const { SuperAdminRepository } = require('@/lib/repositories/repositories')
+    await SuperAdminRepository.saveExpenses(expenses)
   }
 }
