@@ -120,7 +120,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         const appointments = allAppointments.filter(a => 
           a.customer_name.toLowerCase().includes(q) || 
           a.staff_name.toLowerCase().includes(q) ||
-          a.service_name.toLowerCase().includes(q)
+          a.services?.some(s => s.service_name.toLowerCase().includes(q))
         ).slice(0, 3)
 
         const invoices = allInvoices.filter(i => 
