@@ -65,8 +65,8 @@ export function InvoiceDetailsModal({ invoiceId, isOpen, onClose, onSuccess }: I
           try {
             const cust = await CustomerRepository.getById(data.customer_id)
             setCustomer(cust)
-            setShareEmailAddr(cust.email || '')
-            setShareWhatsappPhone(cust.phone || '')
+            setShareEmailAddr(cust?.email || '')
+            setShareWhatsappPhone(cust?.phone || '')
           } catch (err) {
             console.error('Failed to load customer details', err)
           }
@@ -207,7 +207,7 @@ export function InvoiceDetailsModal({ invoiceId, isOpen, onClose, onSuccess }: I
     if (!invoice) return
     
     // Gated to owners and managers
-    if (role !== 'owner' && role !== 'salon_owner' && role !== 'manager') {
+    if (role !== 'salon_owner' && role !== 'manager') {
       error('Access Denied', 'Only salon managers and owners can refund invoices.')
       return
     }
@@ -461,7 +461,7 @@ export function InvoiceDetailsModal({ invoiceId, isOpen, onClose, onSuccess }: I
               </div>
 
               {/* REFUND OPERATIONS */}
-              {invoice.status !== 'refunded' && (role === 'owner' || role === 'manager') && (
+              {invoice.status !== 'refunded' && (role === 'salon_owner' || role === 'manager') && (
                 <div className="p-6 border-t bg-rose-500/5 space-y-4">
                   <div className="flex items-center gap-2 text-rose-500 text-xs font-bold uppercase">
                     <AlertTriangle className="h-4 w-4" /> Transaction Refund Center
