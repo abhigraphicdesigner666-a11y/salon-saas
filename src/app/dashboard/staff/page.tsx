@@ -14,6 +14,7 @@ import { useAuth } from '@/lib/auth/auth-context'
 import { useToast } from '@/components/ui/toast'
 import { permissionHelpers } from '@/lib/auth/permissions'
 import { StaffDetailsModal } from '@/components/shared/staff-details-modal'
+import { AddStaffModal } from '@/components/shared/add-staff-modal'
 import type { Staff } from '@/lib/types'
 
 export default function StaffPage() {
@@ -144,6 +145,12 @@ export default function StaffPage() {
         staffId={selectedId}
         isOpen={!!selectedId}
         onClose={() => setSelectedId(null)}
+        onSuccess={fetchStaff}
+      />
+
+      <AddStaffModal
+        isOpen={showAdd}
+        onClose={() => setShowAdd(false)}
         onSuccess={fetchStaff}
       />
     </motion.div>
