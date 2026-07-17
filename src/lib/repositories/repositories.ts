@@ -30,7 +30,7 @@ const saveMockTable = <T>(key: string, data: T[]) => {
 }
 
 // Instantiate mock tables on load using mock data seeds
-const getSeeds = () => {
+const getSeeds = (): any => {
   if (typeof window !== 'undefined' && localStorage.getItem('salon_ai_db_factory_reset_active') === 'true') {
     return {
       customers: [], services: [], serviceCategories: [], staff: [], appointments: [], invoices: [], products: [], memberships: [], campaigns: [], auditLogs: [], notifications: []
