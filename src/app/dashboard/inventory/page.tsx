@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Search, Filter, Box, IndianRupee, Truck, FileText, AlertTriangle, Loader2 } from 'lucide-react'
+import { Plus, Search, Filter, Box, IndianRupee, Truck, FileText, AlertTriangle, Loader2, Edit2, Trash2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -93,6 +93,28 @@ export default function InventoryPage() {
       error('Failed to create product', e.message)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!permissionHelpers.canDelete(role, 'inventory')) {
+      error('Access Denied', 'Your role is not authorized to delete products.')
+      return
+    }
+    if (!confirm('Are you sure you want to delete this product?')) return
+    try {
+      setLoading(true)
+      await InventoryService.deleteProduct(
+        id,
+        activeTenantId,
+        user?.id || 'anonymous',
+        user ? `${user.first_name} ${user.last_name || ''}` : 'System'
+      )
+      success('Product Deleted', 'Product successfully removed from catalog.')
+      fetchAllInventoryData()
+    } catch (e: any) {
+      error('Failed to delete product', e.message)
+      setLoading(false)
     }
   }
 
@@ -224,12 +246,13 @@ export default function InventoryPage() {
                         <TableHead className="hidden md:table-cell text-left">Cost Price</TableHead>
                         <TableHead className="text-left">Retail Price</TableHead>
                         <TableHead className="text-left">Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredProducts.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-xs font-medium">
+                          <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-xs font-medium">
                             No catalog items found matching your search.
                           </TableCell>
                         </TableRow>
@@ -245,8 +268,18 @@ export default function InventoryPage() {
                               <TableCell className="text-sm text-left">{formatCurrency(p.selling_price)}</TableCell>
                               <TableCell className="text-left">
                                 <Badge variant={isLow ? 'destructive' : 'success'} className="text-[10px]">
-                                  {isLow ? 'Low Stock' : 'Good'}
+                                  {isLow ? 'Low Stock' : 'In Stock'}
                                 </Badge>
+                              </TableCell>
+                              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-end gap-1.5">
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setSelectedProductId(p.id)}>
+                                    <Edit2 className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 hover:bg-rose-500/10" onClick={() => handleDeleteProduct(p.id)}>
+                                    <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           )
