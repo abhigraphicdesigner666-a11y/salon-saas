@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, Users, ShoppingBag, Megaphone, Calendar, BarChart3, AlertTriangle, Loader2, Sparkles, CheckCircle2, DollarSign, Award, Target, Activity, Clock, FileText, ArrowRight, HelpCircle } from 'lucide-react'
+import { TrendingUp, Users, ShoppingBag, Megaphone, Calendar, BarChart3, AlertTriangle, Loader2, Sparkles, CheckCircle2, DollarSign, Award, Target, Activity, Clock, FileText, ArrowRight, HelpCircle, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/lib/auth/auth-context'
 import { formatCurrency } from '@/lib/utils'
