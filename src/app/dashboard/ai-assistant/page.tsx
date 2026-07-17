@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Bot, Sparkles, TrendingUp, Users, ShoppingBag, Megaphone, Calendar, BarChart3, AlertTriangle, Loader2, ShieldAlert, CheckCircle2, DollarSign, Award, Target, Activity, Clock, FileText, ArrowRight } from 'lucide-react'
+import { Bot, Sparkles, TrendingUp, Users, ShoppingBag, Megaphone, Calendar, BarChart3, AlertTriangle, Loader2, ShieldAlert, CheckCircle2, DollarSign, Award, Target, Activity, Clock, FileText, ArrowRight, Landmark } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -173,7 +173,9 @@ export default function BusinessCommandCenter() {
       // Aggregate bookings by service
       const serviceCounts: Record<string, number> = {}
       appointments.forEach(a => {
-        serviceCounts[a.service_name] = (serviceCounts[a.service_name] || 0) + 1
+        a.services?.forEach(s => {
+          serviceCounts[s.service_name] = (serviceCounts[s.service_name] || 0) + 1
+        })
       })
       const sortedServices = Object.keys(serviceCounts).sort((a,b) => serviceCounts[b] - serviceCounts[a])
       if (sortedServices.length > 0) {
