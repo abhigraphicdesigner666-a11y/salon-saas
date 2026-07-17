@@ -13,6 +13,35 @@ export const StaffService = {
     return await StaffRepository.getById(id)
   },
 
+  create: async (tenantId: string, staffData: any, userId: string, userName: string): Promise<Staff> => {
+    const staff = await StaffRepository.create({
+      tenant_id: tenantId,
+      ...staffData,
+      is_active: true,
+    })
+
+    await AuditService.log(
+      tenantId,
+      userId,
+      userName,
+      'create_staff_profile',
+      'staff',
+      staff.id,
+      null,
+      { first_name: staff.first_name, role: staff.role }
+    )
+
+    await NotificationService.send(
+      tenantId,
+      'New Staff Added',
+      `${staff.first_name} has been onboarded as a ${staff.role}.`,
+      'success',
+      '/dashboard/staff'
+    )
+
+    return staff
+  },
+
   update: async (id: string, tenantId: string, updates: any, userId: string, userName: string): Promise<Staff> => {
     const original = await StaffRepository.getById(id)
     const updated = await StaffRepository.update(id, updates)
