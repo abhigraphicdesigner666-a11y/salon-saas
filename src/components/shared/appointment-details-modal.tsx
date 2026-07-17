@@ -51,7 +51,7 @@ export function AppointmentDetailsModal({ appointmentId, isOpen, onClose, onSucc
       if (apt) {
         setAppointment(apt)
         setEditStaff(apt.staff_id)
-        setEditNotes(apt.notes)
+        setEditNotes(apt.notes || '')
         const d = new Date(apt.start_time)
         setEditDate(d.toISOString().split('T')[0])
         setEditTime(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }))
