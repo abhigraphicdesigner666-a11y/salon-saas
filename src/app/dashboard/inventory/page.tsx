@@ -235,14 +235,14 @@ export default function InventoryPage() {
                         </TableRow>
                       ) : (
                         filteredProducts.map(p => {
-                          const isLow = p.stock_quantity <= (p.reorder_level || 5)
+                          const isLow = p.stock_quantity <= (p.min_stock_level || 5)
                           return (
                             <TableRow key={p.id} className="cursor-pointer" onClick={() => setSelectedProductId(p.id)}>
                               <TableCell className="font-semibold text-sm text-left">{p.name}</TableCell>
                               <TableCell className="hidden sm:table-cell text-sm text-left">{p.sku}</TableCell>
                               <TableCell className="text-sm font-bold text-left">{p.stock_quantity} units</TableCell>
-                              <TableCell className="hidden md:table-cell text-sm text-left">{formatCurrency(p.cost_price || p.price * 0.6)}</TableCell>
-                              <TableCell className="text-sm text-left">{formatCurrency(p.price)}</TableCell>
+                              <TableCell className="hidden md:table-cell text-sm text-left">{formatCurrency(p.cost_price || p.selling_price * 0.6)}</TableCell>
+                              <TableCell className="text-sm text-left">{formatCurrency(p.selling_price)}</TableCell>
                               <TableCell className="text-left">
                                 <Badge variant={isLow ? 'destructive' : 'success'} className="text-[10px]">
                                   {isLow ? 'Low Stock' : 'Good'}
