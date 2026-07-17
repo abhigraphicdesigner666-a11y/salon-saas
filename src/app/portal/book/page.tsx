@@ -98,7 +98,7 @@ export default function OnlineBookingPage() {
       }
 
       // Schedule appointment
-      await AppointmentService.schedule(
+      await AppointmentService.create(
         activeTenantId,
         {
           customer_id: activeCustomerId,
@@ -113,8 +113,8 @@ export default function OnlineBookingPage() {
           price: finalTotal,
           duration_minutes: selectedService.duration_minutes
         },
-        'customer-portal',
-        'Priya Sharma'
+        activeCustomerId,
+        customer ? `${customer.first_name} ${customer.last_name || ''}`.trim() : 'Priya Sharma'
       )
 
       success('Booking Confirmed', 'Your appointment has been successfully scheduled!')
