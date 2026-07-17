@@ -71,7 +71,7 @@ export const DASHBOARD_NAV_GROUPS = [
   {
     group: 'Insights',
     items: [
-      { label: 'Business Command Center', href: '/dashboard/ai-assistant', icon: ShieldAlert, permission: 'dashboard' },
+      { label: 'Growth & Strategy', href: '/dashboard/ai-assistant', icon: Bot, permission: 'dashboard' },
       { label: 'Reports', href: '/dashboard/reports', icon: FileText, permission: 'reports' }
     ]
   },
