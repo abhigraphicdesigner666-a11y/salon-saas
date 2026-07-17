@@ -188,7 +188,7 @@ export default function AppointmentsPage() {
                                     <div className="flex-1 min-w-0 text-left">
                                       <div className="text-sm font-semibold">{apt.customer_name}</div>
                                       <div className="text-xs text-muted-foreground">
-                                        {apt.services?.[0]?.name || 'Beauty Service'} • Stylist: {apt.staff_name}
+                                        {apt.services?.[0]?.service_name || 'Beauty Service'} • Stylist: {apt.staff_name}
                                       </div>
                                     </div>
                                     <div className="text-right shrink-0">
