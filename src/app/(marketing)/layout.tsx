@@ -47,12 +47,12 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
             <div className="hidden lg:flex items-center gap-3">
               <ThemeToggle />
-              <Link href="/login">
-                <Button variant="ghost" size="sm">Sign In</Button>
-              </Link>
-              <Link href="/signup">
-                <Button variant="gradient" size="sm">Start Free Trial</Button>
-              </Link>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button asChild variant="gradient" size="sm">
+                <Link href="/signup">Start Free Trial</Link>
+              </Button>
             </div>
 
             {/* Mobile */}
@@ -81,8 +81,12 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
                   </Link>
                 ))}
                 <div className="pt-2 flex flex-col gap-2">
-                  <Link href="/login"><Button variant="outline" className="w-full">Sign In</Button></Link>
-                  <Link href="/signup"><Button variant="gradient" className="w-full">Start Free Trial</Button></Link>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href="/login" onClick={() => setMobileOpen(false)}>Sign In</Link>
+                  </Button>
+                  <Button asChild variant="gradient" className="w-full">
+                    <Link href="/signup" onClick={() => setMobileOpen(false)}>Start Free Trial</Link>
+                  </Button>
                 </div>
               </div>
             </motion.div>
