@@ -180,7 +180,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const currentRouteKey = Object.keys(permissionKeys).find(k => pathname === k || pathname.startsWith(k + '/'))
   const isAuthorized = currentRouteKey ? permissions[permissionKeys[currentRouteKey]] : true
 
-  const SidebarContent = () => (
+  const initials = user ? getInitials(user.first_name, user.last_name) : 'US'
+  const fullName = user ? `${user.first_name} ${user.last_name}` : 'Salon User'
+  const salonName = settings.name || 'Salon Operating System'
+  const logo = settings.logo
+
+  // Memoize Sidebar components to prevent re-renders on layout content changes
+  const sidebarComponent = useMemo(() => (
     <div className="flex flex-col h-full bg-card">
       <div className={cn('flex items-center px-4 h-16 shrink-0', collapsed ? 'justify-center' : 'gap-3')}>
         {logo ? (
@@ -233,16 +239,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </button>
       </div>
     </div>
-  )
-
-  const initials = user ? getInitials(user.first_name, user.last_name) : 'US'
-  const fullName = user ? `${user.first_name} ${user.last_name}` : 'Salon User'
-  const salonName = settings.name || 'Salon Operating System'
-  const logo = settings.logo
-
-  // Memoize Sidebar components to prevent re-renders on layout content changes
-  const sidebarComponent = useMemo(() => (
-    <SidebarContent />
   ), [collapsed, pathname, logo, permissions])
 
   // Memoize Header component to prevent top-bar reconstruction
