@@ -106,7 +106,7 @@ export default function BusinessCommandCenter() {
 
       // 4. Staff underutilization
       const todayStr = new Date().toISOString().split('T')[0]
-      const todayAppointments = appointments.filter(a => a.date === todayStr)
+      const todayAppointments = appointments.filter(a => a.start_time.split('T')[0] === todayStr)
       const staffWithNoBookings = staff.filter(s => {
         const hasApts = todayAppointments.some(a => a.staff_id === s.id)
         return !hasApts && s.is_active
