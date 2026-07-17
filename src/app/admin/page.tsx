@@ -9,7 +9,7 @@ import {
   Database, Search, Download, Trash2, ShieldCheck, Mail, MessageSquare, 
   Settings, Key, AlertCircle, Sparkles, ChevronLeft, ChevronRight, 
   Filter, HelpCircle, Activity, Server, Clock, Plus, LogOut, Check,
-  X, RefreshCw, Layers, Bell, FileText, Lock, Globe, Info, Sliders, Tag
+  X, RefreshCw, Layers, Bell, FileText, Lock, Globe, Info, Sliders, Tag, Copy
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -36,23 +36,35 @@ export default function SuperAdminDashboard() {
   const [logs, setLogs] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
   const [coupons, setCoupons] = useState<any[]>([])
+  const [expenses, setExpenses] = useState<any[]>([])
+
+  // Global settings state
   const [globalSettings, setGlobalSettings] = useState<any>({
     name: 'SalonOS SaaS Platform',
+    company_name: 'GlamStyle Tech Pvt Ltd',
+    gstin: '27AAAAA1111A1Z1',
+    support_email: 'support@salonos.io',
+    support_phone: '+91 99999 88888',
+    address: '12, Link Road, Bandra West, Mumbai',
+    website: 'https://salonos.io',
     logo: '',
+    favicon: '',
     currency: 'INR',
+    timezone: 'IST',
+    date_format: 'DD-MM-YYYY',
     language: 'English',
     tax_rate: '18',
-    gstin: '27AAAAA1111A1Z1',
+    invoice_prefix: 'SLN-',
+    invoice_footer: 'Thank you for choosing SalonOS!',
+    receipt_footer: 'Visit again!',
     maintenance_mode: false,
+    auto_backup: true,
     smtp_host: 'smtp.salonos.io',
     smtp_port: '587',
     smtp_user: 'platform-alerts@salonos.io',
     sms_gateway: 'twilio',
     sms_api_key: 'SK-TWILIO-MOCK-123456',
-    whatsapp_sender: '+919999999999',
-    system_email_template: 'Hi {{name}}, your subscription renewal is due on {{date}}.',
-    system_sms_template: 'Payment failed for invoice {{invoice}}. Please update details.',
-    system_whatsapp_template: 'Thank you for choosing SalonOS! Welcome on board.'
+    whatsapp_sender: '+919999999999'
   })
 
   // Active query parameters tab reader state
@@ -96,19 +108,39 @@ export default function SuperAdminDashboard() {
   const [planName, setPlanName] = useState('')
   const [planPriceMonthly, setPlanPriceMonthly] = useState(2999)
   const [planPriceYearly, setPlanPriceYearly] = useState(29990)
-  const [planTrialDays, setPlanTrialDays] = useState(14)
-  const [planStaffLimit, setPlanStaffLimit] = useState(3)
-  const [planCustomerLimit, setPlanCustomerLimit] = useState(150)
-  const [planStorageLimit, setPlanStorageLimit] = useState(2)
+  const [planStaffLimit, setPlanStaffLimit] = useState(5)
+  const [planBranchLimit, setPlanBranchLimit] = useState(3)
+  const [planStorageLimit, setPlanStorageLimit] = useState(5)
+  const [planAiCredits, setPlanAiCredits] = useState(100)
+  const [planSmsCredits, setPlanSmsCredits] = useState(500)
+  const [planWhatsappCredits, setPlanWhatsappCredits] = useState(100)
+  const [planFeatures, setPlanFeatures] = useState<string[]>(['ai', 'marketing', 'inventory'])
 
   // Coupon creation modal
   const [showCouponModal, setShowCouponModal] = useState<any>(null) // null/ 'create'
   const [coupCode, setCoupCode] = useState('')
   const [coupDiscount, setCoupDiscount] = useState(10)
+  const [coupType, setCoupType] = useState<'percentage' | 'flat'>('percentage')
+  const [coupStart, setCoupStart] = useState('2026-07-01')
+  const [coupEnd, setCoupEnd] = useState('2027-01-01')
   const [coupLimit, setCoupLimit] = useState(100)
-  const [coupExpiry, setCoupExpiry] = useState('2027-01-01')
-  const [coupScope, setCoupScope] = useState('global')
-  const [coupTenantId, setCoupTenantId] = useState('')
+  const [coupPlans, setCoupPlans] = useState<string[]>(['Starter', 'Professional'])
+
+  // Expense Dialog Modal
+  const [showExpenseModal, setShowExpenseModal] = useState<any>(null) // null | 'create' | expense object
+  const [expMonth, setExpMonth] = useState('7')
+  const [expYear, setExpYear] = useState('2026')
+  const [expHosting, setExpHosting] = useState(15000)
+  const [expSupabase, setExpSupabase] = useState(8000)
+  const [expDatabase, setExpDatabase] = useState(5000)
+  const [expStorage, setExpStorage] = useState(2000)
+  const [expEmail, setExpEmail] = useState(3500)
+  const [expSms, setExpSms] = useState(14000)
+  const [expGateway, setExpGateway] = useState(8500)
+  const [expDeveloper, setExpDeveloper] = useState(25000)
+  const [expMarketing, setExpMarketing] = useState(12000)
+  const [expMisc, setExpMisc] = useState(1000)
+  const [expNotes, setExpNotes] = useState('')
 
   // Form states for Tenant creation wizard
   const [newName, setNewName] = useState('')
@@ -132,17 +164,29 @@ export default function SuperAdminDashboard() {
   // Chart hover state
   const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; val: string; date: string } | null>(null)
 
-  // Global settings states
+  // Global settings local state bounds
   const [setGeneralName, setSetGeneralName] = useState('')
-  const [setCurrency, setSetCurrency] = useState('INR')
-  const [setLanguage, setSetLanguage] = useState('English')
-  const [setTaxRate, setSetTaxRate] = useState('18')
+  const [setCompanyName, setSetCompanyName] = useState('')
   const [setGstin, setSetGstin] = useState('')
+  const [setSupportEmail, setSetSupportEmail] = useState('')
+  const [setSupportPhone, setSetSupportPhone] = useState('')
+  const [setAddress, setSetAddress] = useState('')
+  const [setWebsite, setSetWebsite] = useState('')
+  const [setCurrency, setSetCurrency] = useState('INR')
+  const [setTimezone, setSetTimezone] = useState('IST')
+  const [setDateFormat, setSetDateFormat] = useState('DD-MM-YYYY')
+  const [setLanguage, setSetLanguage] = useState('English')
+  const [setLogo, setSetLogo] = useState('')
+  const [setFavicon, setSetFavicon] = useState('')
+  const [setTaxRate, setSetTaxRate] = useState('18')
+  const [setInvoicePrefix, setSetInvoicePrefix] = useState('SLN-')
+  const [setInvoiceFooter, setSetInvoiceFooter] = useState('')
+  const [setReceiptFooter, setSetReceiptFooter] = useState('')
   const [setMaintenance, setSetMaintenance] = useState(false)
+  const [setAutoBackup, setSetAutoBackup] = useState(true)
   const [setSmtpHost, setSetSmtpHost] = useState('')
   const [setSmsGateway, setSetSmsGateway] = useState('')
   const [setwhatsappSender, setSetwhatsappSender] = useState('')
-  const [setEmailTemplate, setSetEmailTemplate] = useState('')
 
   // Load SaaS records
   const loadData = async () => {
@@ -153,24 +197,38 @@ export default function SuperAdminDashboard() {
       const plansList = await SuperAdminService.listPlans()
       const couponsList = await SuperAdminService.listCoupons()
       const settingsData = await SuperAdminService.getGlobalSettings()
+      const expensesList = await SuperAdminService.listExpenses()
       
       setTenants(tenantList)
       setLogs(auditTrail)
       setPlans(plansList)
       setCoupons(couponsList)
+      setExpenses(expensesList)
       
       if (settingsData) {
         setGlobalSettings(settingsData)
         setSetGeneralName(settingsData.name ?? 'SalonOS SaaS')
-        setSetCurrency(settingsData.currency ?? 'INR')
-        setSetLanguage(settingsData.language ?? 'English')
-        setSetTaxRate(settingsData.tax_rate ?? '18')
+        setSetCompanyName(settingsData.company_name ?? 'GlamStyle Tech')
         setSetGstin(settingsData.gstin ?? '')
+        setSetSupportEmail(settingsData.support_email ?? 'support@salonos.io')
+        setSetSupportPhone(settingsData.support_phone ?? '+91 99999 88888')
+        setSetAddress(settingsData.address ?? '12, Link Road, Bandra West, Mumbai')
+        setSetWebsite(settingsData.website ?? 'https://salonos.io')
+        setSetCurrency(settingsData.currency ?? 'INR')
+        setSetTimezone(settingsData.timezone ?? 'IST')
+        setSetDateFormat(settingsData.date_format ?? 'DD-MM-YYYY')
+        setSetLanguage(settingsData.language ?? 'English')
+        setSetLogo(settingsData.logo ?? '')
+        setSetFavicon(settingsData.favicon ?? '')
+        setSetTaxRate(settingsData.tax_rate ?? '18')
+        setSetInvoicePrefix(settingsData.invoice_prefix ?? 'SLN-')
+        setSetInvoiceFooter(settingsData.invoice_footer ?? '')
+        setSetReceiptFooter(settingsData.receipt_footer ?? '')
         setSetMaintenance(settingsData.maintenance_mode ?? false)
+        setSetAutoBackup(settingsData.auto_backup ?? true)
         setSetSmtpHost(settingsData.smtp_host ?? '')
         setSetSmsGateway(settingsData.sms_gateway ?? 'twilio')
         setSetwhatsappSender(settingsData.whatsapp_sender ?? '')
-        setSetEmailTemplate(settingsData.system_email_template ?? '')
       }
     } catch (e) {
       console.error('Failed to load super admin data', e)
@@ -208,24 +266,79 @@ export default function SuperAdminDashboard() {
     else setNewMrr(0)
   }, [newPlan])
 
-  // MRR calculations
-  const overviewStats = useMemo(() => {
+  // Financial and KPI calculations derived from expenses list
+  const financials = useMemo(() => {
+    // 1. Revenue
     const active = tenants.filter(t => t.status === 'active')
     const totalMRR = active.reduce((sum, t) => sum + (t.mrr_revenue || 0), 0)
     const totalARR = totalMRR * 12
-    const totalRevenue = tenants.length === 0 ? 0 : 485000 + totalMRR // base + current cycle
-    const trials = tenants.length === 0 ? 0 : tenants.filter(t => t.plan === 'Free' || t.plan === 'Starter').length
-    const activeUsers = active.reduce((sum, t) => sum + (t.active_users || 0), 0)
-    
+    const totalRevenue = tenants.length === 0 ? 0 : 485000 + totalMRR
+
+    // 2. Expenses matching selected date/month filter
+    const activeExpenses = expenses.filter(e => e.month === expMonth && e.year === expYear)
+    const currentMonthExpenses = activeExpenses.reduce((sum, e) => {
+      return sum + 
+        (e.hosting_cost || 0) + 
+        (e.supabase_cost || 0) + 
+        (e.database_cost || 0) + 
+        (e.storage_cost || 0) + 
+        (e.email_provider_cost || 0) + 
+        (e.sms_provider_cost || 0) + 
+        (e.payment_gateway_fees || 0) + 
+        (e.developer_cost || 0) + 
+        (e.marketing_cost || 0) + 
+        (e.misc_cost || 0)
+    }, 0)
+
+    const yearlyExpenses = expenses.filter(e => e.year === expYear).reduce((sum, e) => {
+      return sum + 
+        (e.hosting_cost || 0) + 
+        (e.supabase_cost || 0) + 
+        (e.database_cost || 0) + 
+        (e.storage_cost || 0) + 
+        (e.email_provider_cost || 0) + 
+        (e.sms_provider_cost || 0) + 
+        (e.payment_gateway_fees || 0) + 
+        (e.developer_cost || 0) + 
+        (e.marketing_cost || 0) + 
+        (e.misc_cost || 0)
+    }, 0)
+
+    // 3. Profit
+    const netProfit = tenants.length === 0 ? 0 : totalMRR - currentMonthExpenses
+    const profitMargin = totalMRR === 0 ? 0 : Math.round((netProfit / totalMRR) * 100)
+
+    // 4. Operating, recurring, and cashflow
+    const operatingCost = activeExpenses.reduce((sum, e) => {
+      return sum + (e.hosting_cost || 0) + (e.supabase_cost || 0) + (e.database_cost || 0) + (e.storage_cost || 0) + (e.payment_gateway_fees || 0)
+    }, 0)
+
+    const recurringCost = activeExpenses.reduce((sum, e) => {
+      return sum + (e.hosting_cost || 0) + (e.supabase_cost || 0) + (e.developer_cost || 0) + (e.sms_provider_cost || 0)
+    }, 0)
+
+    const oneTimeCost = activeExpenses.reduce((sum, e) => sum + (e.misc_cost || 0), 0)
+    const cashFlow = totalMRR - operatingCost
+    const gstCollected = totalMRR * (Number(globalSettings.tax_rate) / 100)
+
     return {
       mrr: totalMRR,
       arr: totalARR,
       totalRev: totalRevenue,
       activeCount: tenants.length === 0 ? 0 : active.length,
-      trialsCount: tenants.length === 0 ? 0 : trials,
-      activeUsersToday: tenants.length === 0 ? 0 : activeUsers
+      trialsCount: tenants.length === 0 ? 0 : tenants.filter(t => t.plan === 'Free' || t.plan === 'Starter').length,
+      activeUsersToday: tenants.length === 0 ? 0 : active.reduce((sum, t) => sum + (t.active_users || 0), 0),
+      monthExpenses: currentMonthExpenses,
+      yearExpenses: yearlyExpenses,
+      netProfit,
+      profitMargin,
+      operatingCost,
+      recurringCost,
+      oneTimeCost,
+      cashFlow,
+      gstCollected
     }
-  }, [tenants])
+  }, [tenants, expenses, expMonth, expYear, globalSettings.tax_rate])
 
   // Platform Alerts warning list
   const systemAlerts = useMemo(() => [
@@ -457,19 +570,25 @@ export default function SuperAdminDashboard() {
       setPlanName('')
       setPlanPriceMonthly(1999)
       setPlanPriceYearly(19990)
-      setPlanTrialDays(14)
       setPlanStaffLimit(5)
-      setPlanCustomerLimit(200)
-      setPlanStorageLimit(2)
+      setPlanBranchLimit(3)
+      setPlanStorageLimit(5)
+      setPlanAiCredits(100)
+      setPlanSmsCredits(500)
+      setPlanWhatsappCredits(100)
+      setPlanFeatures(['ai', 'marketing', 'inventory'])
     } else {
       setShowPlanModal(mode)
       setPlanName(mode.name)
       setPlanPriceMonthly(mode.price_monthly)
       setPlanPriceYearly(mode.price_yearly)
-      setPlanTrialDays(mode.trial_days)
       setPlanStaffLimit(mode.staff_limit)
-      setPlanCustomerLimit(mode.customer_limit)
+      setPlanBranchLimit(mode.branch_limit || 3)
       setPlanStorageLimit(mode.storage_limit_gb)
+      setPlanAiCredits(mode.ai_credits || 100)
+      setPlanSmsCredits(mode.sms_credits || 500)
+      setPlanWhatsappCredits(mode.whatsapp_credits || 100)
+      setPlanFeatures(mode.features || ['ai', 'marketing', 'inventory'])
     }
   }
 
@@ -485,10 +604,13 @@ export default function SuperAdminDashboard() {
         name: planName,
         price_monthly: planPriceMonthly,
         price_yearly: planPriceYearly,
-        trial_days: planTrialDays,
         staff_limit: planStaffLimit,
-        customer_limit: planCustomerLimit,
+        branch_limit: planBranchLimit,
         storage_limit_gb: planStorageLimit,
+        ai_credits: planAiCredits,
+        sms_credits: planSmsCredits,
+        whatsapp_credits: planWhatsappCredits,
+        features: planFeatures,
         status: 'active'
       })
       success('Plan Created', `New plan subscription ${planName} added.`)
@@ -500,10 +622,13 @@ export default function SuperAdminDashboard() {
           name: planName,
           price_monthly: planPriceMonthly,
           price_yearly: planPriceYearly,
-          trial_days: planTrialDays,
           staff_limit: planStaffLimit,
-          customer_limit: planCustomerLimit,
-          storage_limit_gb: planStorageLimit
+          branch_limit: planBranchLimit,
+          storage_limit_gb: planStorageLimit,
+          ai_credits: planAiCredits,
+          sms_credits: planSmsCredits,
+          whatsapp_credits: planWhatsappCredits,
+          features: planFeatures
         }
         success('Plan Updated', `Plan settings configured for ${planName}.`)
       }
@@ -531,28 +656,80 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  const handleDuplicatePlan = async (plan: any) => {
+    const updated = [...plans]
+    updated.push({
+      ...plan,
+      id: 'p-' + Math.random().toString(36).substring(2, 7),
+      name: `Copy of ${plan.name}`,
+      status: 'active'
+    })
+    await SuperAdminService.savePlans(updated)
+    success('Plan Duplicated', `Created carbon copy of ${plan.name}.`)
+    loadData()
+  }
+
   // Coupon Management Actions
-  const handleCreateCoupon = async () => {
+  const handleOpenCouponModal = (mode: 'create' | any) => {
+    if (mode === 'create') {
+      setShowCouponModal('create')
+      setCoupCode('')
+      setCoupDiscount(10)
+      setCoupType('percentage')
+      setCoupStart('2026-07-01')
+      setCoupEnd('2027-01-01')
+      setCoupLimit(100)
+      setCoupPlans(['Starter', 'Professional'])
+    } else {
+      setShowCouponModal(mode)
+      setCoupCode(mode.code)
+      setCoupDiscount(mode.discount_percent || mode.discount_value)
+      setCoupType(mode.discount_percent ? 'percentage' : 'flat')
+      setCoupStart(mode.start_date || '2026-07-01')
+      setCoupEnd(mode.expiry_date || '2027-01-01')
+      setCoupLimit(mode.usage_limit)
+      setCoupPlans(mode.applicable_plans || ['Starter', 'Professional'])
+    }
+  }
+
+  const handleSaveCoupon = async () => {
     if (!coupCode) {
       error('Code Required', 'Please enter coupon code.')
       return
     }
     const updated = [...coupons]
-    updated.push({
-      id: 'c-' + Math.random().toString(36).substring(2, 7),
-      code: coupCode.toUpperCase(),
-      discount_percent: coupDiscount,
-      expiry_date: coupExpiry,
-      active: true,
-      usage_limit: coupLimit,
-      uses_count: 0,
-      scope: coupScope,
-      tenant_id: coupScope === 'tenant' ? coupTenantId : null
-    })
+    if (showCouponModal === 'create') {
+      updated.push({
+        id: 'c-' + Math.random().toString(36).substring(2, 7),
+        code: coupCode.toUpperCase(),
+        discount_percent: coupType === 'percentage' ? coupDiscount : 0,
+        discount_flat: coupType === 'flat' ? coupDiscount : 0,
+        expiry_date: coupEnd,
+        start_date: coupStart,
+        active: true,
+        usage_limit: coupLimit,
+        uses_count: 0,
+        applicable_plans: coupPlans
+      })
+      success('Coupon Created', `Discount promo code ${coupCode} added to catalog.`)
+    } else {
+      const idx = updated.findIndex(c => c.id === showCouponModal.id)
+      if (idx !== -1) {
+        updated[idx] = {
+          ...updated[idx],
+          code: coupCode.toUpperCase(),
+          discount_percent: coupType === 'percentage' ? coupDiscount : 0,
+          discount_flat: coupType === 'flat' ? coupDiscount : 0,
+          expiry_date: coupEnd,
+          start_date: coupStart,
+          usage_limit: coupLimit,
+          applicable_plans: coupPlans
+        }
+        success('Coupon Updated', `Promo code configs saved for ${coupCode}.`)
+      }
+    }
     await SuperAdminService.saveCoupons(updated)
-    success('Coupon Created', `Discount promo code ${coupCode} added to catalog.`)
     setShowCouponModal(null)
-    setCoupCode('')
     loadData()
   }
 
@@ -563,21 +740,114 @@ export default function SuperAdminDashboard() {
     loadData()
   }
 
+  // Expense Management Actions
+  const handleOpenExpenseModal = (mode: 'create' | any) => {
+    if (mode === 'create') {
+      setShowExpenseModal('create')
+      setExpMonth('7')
+      setExpYear('2026')
+      setExpHosting(15000)
+      setExpSupabase(8000)
+      setExpDatabase(5000)
+      setExpStorage(2000)
+      setExpEmail(3500)
+      setExpSms(14000)
+      setExpGateway(8500)
+      setExpDeveloper(25000)
+      setExpMarketing(12000)
+      setExpMisc(1000)
+      setExpNotes('')
+    } else {
+      setShowExpenseModal(mode)
+      setExpMonth(mode.month)
+      setExpYear(mode.year)
+      setExpHosting(mode.hosting_cost)
+      setExpSupabase(mode.supabase_cost)
+      setExpDatabase(mode.database_cost)
+      setExpStorage(mode.storage_cost)
+      setExpEmail(mode.email_provider_cost)
+      setExpSms(mode.sms_provider_cost)
+      setExpGateway(mode.payment_gateway_fees)
+      setExpDeveloper(mode.developer_cost)
+      setExpMarketing(mode.marketing_cost)
+      setExpMisc(mode.misc_cost)
+      setExpNotes(mode.notes || '')
+    }
+  }
+
+  const handleSaveExpense = async () => {
+    const updated = [...expenses]
+    const expenseData = {
+      hosting_cost: expHosting,
+      supabase_cost: expSupabase,
+      database_cost: expDatabase,
+      storage_cost: expStorage,
+      email_provider_cost: expEmail,
+      sms_provider_cost: expSms,
+      payment_gateway_fees: expGateway,
+      developer_cost: expDeveloper,
+      marketing_cost: expMarketing,
+      misc_cost: expMisc,
+      notes: expNotes,
+      month: expMonth,
+      year: expYear
+    }
+
+    if (showExpenseModal === 'create') {
+      updated.push({
+        id: 'exp-' + Math.random().toString(36).substring(2, 7),
+        ...expenseData
+      })
+      success('Expense Logged', `Platform infrastructure costs logged successfully.`)
+    } else {
+      const idx = updated.findIndex(e => e.id === showExpenseModal.id)
+      if (idx !== -1) {
+        updated[idx] = {
+          ...updated[idx],
+          ...expenseData
+        }
+        success('Expense Updated', `Platform expenses config saved.`)
+      }
+    }
+    await SuperAdminService.saveExpenses(updated)
+    setShowExpenseModal(null)
+    loadData()
+  }
+
+  const handleDeleteExpense = async (id: string) => {
+    const updated = expenses.filter(e => e.id !== id)
+    await SuperAdminService.saveExpenses(updated)
+    success('Expense Deleted', `Platform infrastructure cost item purged.`)
+    loadData()
+  }
+
   // Global Settings save
   const handleSaveGlobalSettings = async () => {
     try {
       const config = {
         ...globalSettings,
         name: setGeneralName,
-        currency: setCurrency,
-        language: setLanguage,
-        tax_rate: setTaxRate,
+        company_name: setCompanyName,
         gstin: setGstin,
+        support_email: setSupportEmail,
+        support_phone: setSupportPhone,
+        address: setAddress,
+        website: setWebsite,
+        currency: setCurrency,
+        timezone: setTimezone,
+        date_format: setDateFormat,
+        language: setLanguage,
+        logo: setLogo,
+        favicon: setFavicon,
+        tax_rate: setTaxRate,
+        invoice_prefix: setInvoicePrefix,
+        invoice_footer: setInvoiceFooter,
+        receipt_footer: setReceiptFooter,
         maintenance_mode: setMaintenance,
+        auto_backup: setAutoBackup,
         smtp_host: setSmtpHost,
         sms_gateway: setSmsGateway,
-        whatsapp_sender: setwhatsappSender,
-        system_email_template: setEmailTemplate
+        whatsapp_sender: setwhatsappSender
       }
       await SuperAdminService.saveGlobalSettings(config)
       success('Platform Settings Saved', 'Global control config saved successfully.')
@@ -606,7 +876,7 @@ export default function SuperAdminDashboard() {
 
   // Interactive line graph coordinates mapping helper
   const linePoints = useMemo(() => {
-    const values = [42000, 48000, 52000, 58000, 61000, overviewStats.mrr]
+    const values = [42000, 48000, 52000, 58000, 61000, financials.mrr]
     const width = 500
     const height = 140
     const padding = 30
@@ -621,7 +891,7 @@ export default function SuperAdminDashboard() {
       const date = `Month -${5 - idx}`
       return { x, y, val: val.toString(), date: idx === 5 ? 'Current MRR' : date }
     })
-  }, [overviewStats.mrr])
+  }, [financials.mrr])
 
   return (
     <div className="space-y-6 text-left relative pb-16">
@@ -709,10 +979,10 @@ export default function SuperAdminDashboard() {
               {/* Executive Overview KPI Grid */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { title: 'Monthly Recurring (MRR)', val: formatCurrency(overviewStats.mrr), comp: tenants.length === 0 ? '₹0' : '₹58,000', change: tenants.length === 0 ? '0%' : '+8.6%', trend: tenants.length === 0 ? [] : [42, 48, 52, 58, 61, 63], up: true },
-                  { title: 'Annual Recurring (ARR)', val: formatCurrency(overviewStats.arr), comp: tenants.length === 0 ? '₹0' : '₹6,96,000', change: tenants.length === 0 ? '0%' : '+8.6%', trend: tenants.length === 0 ? [] : [504, 576, 624, 696, 732, 756], up: true },
-                  { title: 'Active Tenants', val: `${overviewStats.activeCount} Salons`, comp: tenants.length === 0 ? '0 Salons' : '4 Salons', change: tenants.length === 0 ? '0%' : '+25.0%', trend: tenants.length === 0 ? [] : [2, 3, 3, 4, 4, 4], up: true },
-                  { title: 'Active Users Today', val: `${overviewStats.activeUsersToday} Users`, comp: tenants.length === 0 ? '0 Users' : '11 Users', change: tenants.length === 0 ? '0%' : '+27.2%', trend: tenants.length === 0 ? [] : [6, 8, 9, 11, 13, 14], up: true }
+                  { title: 'Monthly Recurring (MRR)', val: formatCurrency(financials.mrr), comp: tenants.length === 0 ? '₹0' : '₹58,000', change: tenants.length === 0 ? '0%' : '+8.6%', trend: tenants.length === 0 ? [] : [42, 48, 52, 58, 61, 63], up: true },
+                  { title: 'Annual Recurring (ARR)', val: formatCurrency(financials.arr), comp: tenants.length === 0 ? '₹0' : '₹6,96,000', change: tenants.length === 0 ? '0%' : '+8.6%', trend: tenants.length === 0 ? [] : [504, 576, 624, 696, 732, 756], up: true },
+                  { title: 'Active Tenants', val: `${financials.activeCount} Salons`, comp: tenants.length === 0 ? '0 Salons' : '4 Salons', change: tenants.length === 0 ? '0%' : '+25.0%', trend: tenants.length === 0 ? [] : [2, 3, 3, 4, 4, 4], up: true },
+                  { title: 'Active Users Today', val: `${financials.activeUsersToday} Users`, comp: tenants.length === 0 ? '0 Users' : '11 Users', change: tenants.length === 0 ? '0%' : '+27.2%', trend: tenants.length === 0 ? [] : [6, 8, 9, 11, 13, 14], up: true }
                 ].map((kpi, idx) => (
                   <Card key={idx} className="glass-card flex flex-col justify-between">
                     <CardContent className="p-4 space-y-2">
@@ -876,11 +1146,11 @@ export default function SuperAdminDashboard() {
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                         <div className="border p-3 rounded-xl bg-card">
                           <span className="text-[9px] text-muted-foreground uppercase font-bold">Projected Monthly Revenue</span>
-                          <div className="font-bold text-sm mt-1">{formatCurrency(overviewStats.mrr * 1.15)}</div>
+                          <div className="font-bold text-sm mt-1">{formatCurrency(financials.mrr * 1.15)}</div>
                         </div>
                         <div className="border p-3 rounded-xl bg-card">
                           <span className="text-[9px] text-muted-foreground uppercase font-bold">Recurring Forecast</span>
-                          <div className="font-bold text-sm mt-1">{formatCurrency(overviewStats.arr * 1.25)}</div>
+                          <div className="font-bold text-sm mt-1">{formatCurrency(financials.arr * 1.25)}</div>
                         </div>
                         <div className="border p-3 rounded-xl bg-card">
                           <span className="text-[9px] text-muted-foreground uppercase font-bold">Outstanding Payments</span>
@@ -968,7 +1238,7 @@ export default function SuperAdminDashboard() {
                     <Layers className="h-5 w-5 text-indigo-500" />
                     <span className="text-[10px] font-bold">Create Plan</span>
                   </div>
-                  <div onClick={() => setShowCouponModal('create')} className="p-4 border rounded-2xl bg-card hover:bg-muted/30 cursor-pointer transition-colors flex flex-col items-center justify-center gap-1">
+                  <div onClick={() => handleOpenCouponModal('create')} className="p-4 border rounded-2xl bg-card hover:bg-muted/30 cursor-pointer transition-colors flex flex-col items-center justify-center gap-1">
                     <Tag className="h-5 w-5 text-emerald-500" />
                     <span className="text-[10px] font-bold">Create Coupon</span>
                   </div>
@@ -1013,10 +1283,11 @@ export default function SuperAdminDashboard() {
                         <th className="p-3">Plan Name</th>
                         <th className="p-3 text-right font-bold">Monthly Price</th>
                         <th className="p-3 text-right font-bold">Yearly Price</th>
-                        <th className="p-3 text-right">Trial (Days)</th>
                         <th className="p-3 text-right">Staff Limit</th>
-                        <th className="p-3 text-right">Customer Limit</th>
+                        <th className="p-3 text-right">Branch Limit</th>
                         <th className="p-3 text-right">Storage Limit</th>
+                        <th className="p-3 text-right">AI Credits</th>
+                        <th className="p-3 text-right">SMS Credits</th>
                         <th className="p-3">Status</th>
                         <th className="p-3 text-right">Actions</th>
                       </tr>
@@ -1027,10 +1298,11 @@ export default function SuperAdminDashboard() {
                           <td className="p-3 font-semibold text-primary">{p.name}</td>
                           <td className="p-3 text-right font-bold">{formatCurrency(p.price_monthly)}</td>
                           <td className="p-3 text-right font-bold">{formatCurrency(p.price_yearly)}</td>
-                          <td className="p-3 text-right">{p.trial_days} days</td>
                           <td className="p-3 text-right">{p.staff_limit} Staff</td>
-                          <td className="p-3 text-right">{p.customer_limit} Clients</td>
+                          <td className="p-3 text-right">{p.branch_limit || 3} Branches</td>
                           <td className="p-3 text-right">{p.storage_limit_gb} GB</td>
+                          <td className="p-3 text-right">{p.ai_credits || 100} credits</td>
+                          <td className="p-3 text-right">{p.sms_credits || 500} SMS</td>
                           <td className="p-3">
                             <Badge variant={p.status === 'active' ? 'success' : 'secondary'} className="text-[9px] uppercase">
                               {p.status}
@@ -1038,14 +1310,17 @@ export default function SuperAdminDashboard() {
                           </td>
                           <td className="p-3 text-right">
                             <div className="flex items-center justify-end gap-1.5">
-                              <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => handleOpenPlanModal(p)}>
-                                Edit
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={() => handleOpenPlanModal(p)}>
+                                <Settings className="h-3.5 w-3.5" />
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] text-amber-500" onClick={() => handleArchivePlan(p.id, p.status)}>
-                                {p.status === 'active' ? 'Archive' : 'Activate'}
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-indigo-500" onClick={() => handleDuplicatePlan(p)}>
+                                <Copy className="h-3.5 w-3.5" />
                               </Button>
-                              <Button size="sm" variant="outline" className="h-7 text-[10px] text-rose-500" onClick={() => handleDeletePlan(p.id, p.name)}>
-                                Delete
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-amber-500" onClick={() => handleArchivePlan(p.id, p.status)}>
+                                <Shield className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-500" onClick={() => handleDeletePlan(p.id, p.name)}>
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </td>
@@ -1072,7 +1347,7 @@ export default function SuperAdminDashboard() {
                   <h3 className="text-base font-bold">Offers & Coupon Center</h3>
                   <p className="text-xs text-muted-foreground">Configure promo discount codes, referral metrics, and seasonal campaigns.</p>
                 </div>
-                <Button size="sm" variant="gradient" className="h-8 text-xs font-semibold" onClick={() => setShowCouponModal('create')}>
+                <Button size="sm" variant="gradient" className="h-8 text-xs font-semibold" onClick={() => handleOpenCouponModal('create')}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> Create Coupon
                 </Button>
               </div>
@@ -1084,12 +1359,12 @@ export default function SuperAdminDashboard() {
                     <thead className="bg-muted/30 border-b text-muted-foreground font-semibold uppercase text-[9px]">
                       <tr>
                         <th className="p-3">Coupon Code</th>
-                        <th className="p-3 text-right">Discount</th>
+                        <th className="p-3">Discount</th>
+                        <th className="p-3">Start Date</th>
                         <th className="p-3">Expiry Date</th>
-                        <th className="p-3 text-right">Usage Limit</th>
-                        <th className="p-3 text-right">Uses Count</th>
-                        <th className="p-3">Scope</th>
-                        <th className="p-3">Tenant Bound</th>
+                        <th className="p-3 text-right">Max Usage</th>
+                        <th className="p-3 text-right">Current Uses</th>
+                        <th className="p-3">Plans Applicable</th>
                         <th className="p-3">Status</th>
                         <th className="p-3 text-right">Actions</th>
                       </tr>
@@ -1098,21 +1373,28 @@ export default function SuperAdminDashboard() {
                       {coupons.map(c => (
                         <tr key={c.id} className="hover:bg-muted/10 transition-colors">
                           <td className="p-3 font-mono font-bold text-primary">{c.code}</td>
-                          <td className="p-3 text-right font-semibold">{c.discount_percent}% Off</td>
+                          <td className="p-3 font-semibold">
+                            {c.discount_percent ? `${c.discount_percent}% Off` : formatCurrency(c.discount_flat || 0)}
+                          </td>
+                          <td className="p-3 text-muted-foreground">{c.start_date || '2026-07-01'}</td>
                           <td className="p-3 text-muted-foreground">{c.expiry_date}</td>
                           <td className="p-3 text-right">{c.usage_limit} uses</td>
                           <td className="p-3 text-right font-bold">{c.uses_count}</td>
-                          <td className="p-3 capitalize">{c.scope}</td>
-                          <td className="p-3 text-muted-foreground truncate max-w-xs">{c.tenant_id || 'Global'}</td>
+                          <td className="p-3 truncate max-w-xs">{c.applicable_plans?.join(', ') || 'All'}</td>
                           <td className="p-3">
                             <Badge variant={c.active ? 'success' : 'secondary'} className="text-[9px] uppercase">
                               {c.active ? 'Active' : 'Expired'}
                             </Badge>
                           </td>
                           <td className="p-3 text-right">
-                            <Button size="sm" variant="outline" className="h-7 text-[10px] text-rose-500" onClick={() => handleDeleteCoupon(c.id, c.code)}>
-                              Delete
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => handleOpenCouponModal(c)}>
+                                Edit
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-[10px] text-rose-500" onClick={() => handleDeleteCoupon(c.id, c.code)}>
+                                Delete
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1420,32 +1702,45 @@ export default function SuperAdminDashboard() {
             >
               <div className="space-y-1">
                 <h3 className="text-base font-bold">Global SaaS Platform Configurations</h3>
-                <p className="text-xs text-muted-foreground">Maintain platform-wide currencies, defaults, gateway keys, and maintenance modes.</p>
+                <p className="text-xs text-muted-foreground">Maintain platform-wide configurations, currencies, defaults, and templates.</p>
               </div>
 
               <Card className="border bg-card">
                 <CardContent className="p-6 space-y-6 text-xs">
                   {/* General Branding */}
                   <div className="space-y-4">
-                    <h4 className="font-bold text-primary border-b pb-1.5 flex items-center gap-1.5"><Globe className="h-4 w-4" /> General Settings & Branding</h4>
+                    <h4 className="font-bold text-primary border-b pb-1.5 flex items-center gap-1.5"><Globe className="h-4 w-4" /> Platform & General Branding</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
                         <Label>Platform Public Name</Label>
                         <Input value={setGeneralName} onChange={e => setSetGeneralName(e.target.value)} className="h-8 bg-muted/20" />
                       </div>
                       <div className="space-y-1">
-                        <Label>Maintenance Mode</Label>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Checkbox id="maintenance-mode" checked={setMaintenance} onCheckedChange={(checked: any) => setSetMaintenance(!!checked)} />
-                          <Label htmlFor="maintenance-mode" className="cursor-pointer font-bold text-rose-500">Enable Platform Maintenance Mode</Label>
-                        </div>
+                        <Label>Company Corporate Name</Label>
+                        <Input value={setCompanyName} onChange={e => setSetCompanyName(e.target.value)} className="h-8 bg-muted/20" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>GST Registration Number (GSTIN)</Label>
+                        <Input value={setGstin} onChange={e => setSetGstin(e.target.value)} className="h-8 bg-muted/20" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>SaaS Support Phone</Label>
+                        <Input value={setSupportPhone} onChange={e => setSetSupportPhone(e.target.value)} className="h-8 bg-muted/20" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>SaaS Support Email</Label>
+                        <Input type="email" value={setSupportEmail} onChange={e => setSetSupportEmail(e.target.value)} className="h-8 bg-muted/20" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Website Link</Label>
+                        <Input value={setWebsite} onChange={e => setSetWebsite(e.target.value)} className="h-8 bg-muted/20" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Taxes & GST */}
+                  {/* Taxes, Currencies & Formats */}
                   <div className="space-y-4 pt-3 border-t">
-                    <h4 className="font-bold text-primary border-b pb-1.5 flex items-center gap-1.5"><Landmark className="h-4 w-4" /> Currency, Languages & Taxes</h4>
+                    <h4 className="font-bold text-primary border-b pb-1.5 flex items-center gap-1.5"><Landmark className="h-4 w-4" /> Taxes, Currencies & Formats</h4>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-1">
                         <Label>Default Currency</Label>
@@ -1455,6 +1750,28 @@ export default function SuperAdminDashboard() {
                             <SelectItem value="INR">Indian Rupee (₹)</SelectItem>
                             <SelectItem value="USD">US Dollar ($)</SelectItem>
                             <SelectItem value="EUR">Euro (€)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Timezone</Label>
+                        <Select value={setTimezone} onValueChange={setSetTimezone}>
+                          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="IST">India Standard Time (IST)</SelectItem>
+                            <SelectItem value="EST">Eastern Standard Time (EST)</SelectItem>
+                            <SelectItem value="GMT">Greenwich Mean Time (GMT)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Date Format</Label>
+                        <Select value={setDateFormat} onValueChange={setSetDateFormat}>
+                          <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="DD-MM-YYYY">DD-MM-YYYY</SelectItem>
+                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                            <SelectItem value="MM-DD-YYYY">MM-DD-YYYY</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1473,35 +1790,72 @@ export default function SuperAdminDashboard() {
                         <Label>Default GST Tax Rate (%)</Label>
                         <Input type="number" value={setTaxRate} onChange={e => setSetTaxRate(e.target.value)} className="h-8 bg-muted/20" />
                       </div>
+                      <div className="space-y-1">
+                        <Label>Invoice Number Prefix</Label>
+                        <Input value={setInvoicePrefix} onChange={e => setSetInvoicePrefix(e.target.value)} className="h-8 bg-muted/20" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Message Templates & Gateways */}
+                  {/* Messaging API settings */}
                   <div className="space-y-4 pt-3 border-t">
-                    <h4 className="font-bold text-primary border-b pb-1.5 flex items-center gap-1.5"><Sliders className="h-4 w-4" /> Notification Templates & API Keys</h4>
+                    <h4 className="font-bold text-primary border-b pb-1.5 flex items-center gap-1.5"><Sliders className="h-4 w-4" /> SMTP Settings & Communication Gateways</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <Label>SMTP Mail Host</Label>
+                        <Label>SMTP Mail Server Host</Label>
                         <Input value={setSmtpHost} onChange={e => setSetSmtpHost(e.target.value)} className="h-8 bg-muted/20" />
                       </div>
                       <div className="space-y-1">
-                        <Label>SMS Twilio API Key</Label>
+                        <Label>SMS Provider API Key</Label>
                         <Input value={setSmsGateway} onChange={e => setSetSmsGateway(e.target.value)} className="h-8 bg-muted/20" />
                       </div>
-                      <div className="space-y-1 col-span-2">
-                        <Label>Renewal Reminder Email Template</Label>
+                      <div className="space-y-1">
+                        <Label>WhatsApp Dispatch Sender</Label>
+                        <Input value={setwhatsappSender} onChange={e => setSetwhatsappSender(e.target.value)} className="h-8 bg-muted/20" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>WhatsApp Integration Status</Label>
+                        <Input disabled value="Inactive (Placeholder API Config)" className="h-8 bg-muted/10 text-muted-foreground font-semibold" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Policy & Auto backup templates */}
+                  <div className="space-y-4 pt-3 border-t">
+                    <h4 className="font-bold text-primary border-b pb-1.5 flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" /> Policies, Auto Backup & Maintenance</h4>
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label>Platform Invoice Footer terms</Label>
                         <textarea 
-                          className="w-full min-h-[70px] bg-muted/10 border rounded-xl p-2 outline-none focus:ring-1 focus:ring-primary text-xs" 
-                          value={setEmailTemplate}
-                          onChange={e => setSetEmailTemplate(e.target.value)}
+                          className="w-full min-h-[50px] bg-muted/10 border rounded-xl p-2 outline-none focus:ring-1 focus:ring-primary text-xs" 
+                          value={setInvoiceFooter}
+                          onChange={e => setSetInvoiceFooter(e.target.value)}
                         />
+                      </div>
+                      <div className="space-y-1">
+                        <Label>Thermal Receipt Footer note</Label>
+                        <textarea 
+                          className="w-full min-h-[50px] bg-muted/10 border rounded-xl p-2 outline-none focus:ring-1 focus:ring-primary text-xs" 
+                          value={setReceiptFooter}
+                          onChange={e => setSetReceiptFooter(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox id="set-backup" checked={setAutoBackup} onCheckedChange={(checked: any) => setSetAutoBackup(!!checked)} />
+                          <Label htmlFor="set-backup" className="cursor-pointer font-bold">Enable Daily Platform Auto backups</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Checkbox id="set-maint" checked={setMaintenance} onCheckedChange={(checked: any) => setSetMaintenance(!!checked)} />
+                          <Label htmlFor="set-maint" className="cursor-pointer font-bold text-rose-500">Enable Maintenance Mode</Label>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-end pt-3">
                     <Button variant="gradient" size="sm" onClick={handleSaveGlobalSettings}>
-                      Save Platform Configurations
+                      Save Global SaaS Settings
                     </Button>
                   </div>
                 </CardContent>
@@ -1518,82 +1872,133 @@ export default function SuperAdminDashboard() {
               exit={{ opacity: 0, y: -10 }}
               className="space-y-6"
             >
-              {/* Expandable widget: Customer Success */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                {/* Support and Satisfaction */}
+              {/* Financial Dashboard summary card */}
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 text-xs">
                 <Card className="border bg-card">
-                  <CardHeader className="pb-3 border-b">
-                    <CardTitle className="text-sm font-bold flex items-center gap-1.5"><MessageSquare className="h-4 w-4 text-primary" /> Customer Success Dashboard</CardTitle>
-                    <CardDescription className="text-xs">Ticket response rates and NPS indexes.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div className="border p-3 rounded-xl bg-muted/20">
-                        <span className="text-[9px] text-muted-foreground uppercase font-bold">NPS Index</span>
-                        <h4 className="text-xl font-bold text-primary mt-1">{tenants.length === 0 ? '0' : '78'} Score</h4>
-                      </div>
-                      <div className="border p-3 rounded-xl bg-muted/20">
-                        <span className="text-[9px] text-muted-foreground uppercase font-bold">Resolution Rate</span>
-                        <h4 className="text-xl font-bold text-emerald-500 mt-1">{tenants.length === 0 ? '0%' : '100%'}</h4>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 border-t pt-3">
-                      <div className="flex justify-between items-center">
-                        <span>Average Resolution Time:</span>
-                        <strong>{tenants.length === 0 ? '0' : '1.4'} hours</strong>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Open Bug Tickets:</span>
-                        <span className="text-emerald-500 font-bold">0 Tickets</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Top Feature Request:</span>
-                        <span className="text-primary font-semibold">{tenants.length === 0 ? 'None' : 'Multiple GST rates configurations (+28 votes)'}</span>
-                      </div>
-                    </div>
+                  <CardContent className="p-4 space-y-1">
+                    <span className="text-[9px] text-muted-foreground uppercase font-bold">MRR / Revenue</span>
+                    <h3 className="text-xl font-bold">{formatCurrency(financials.mrr)}</h3>
+                    <span className="text-[8px] text-muted-foreground">ARR: {formatCurrency(financials.arr)}</span>
                   </CardContent>
                 </Card>
-
-                {/* Costs and taxes */}
                 <Card className="border bg-card">
-                  <CardHeader className="pb-3 border-b">
-                    <CardTitle className="text-sm font-bold flex items-center gap-1.5"><Landmark className="h-4 w-4 text-emerald-500" /> Platform Infrastructure Costs</CardTitle>
-                    <CardDescription className="text-xs">Monthly hosting and hosting overheads.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-4 space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span>Hosting Overhead (Vercel/Supabase):</span>
-                        <strong className="text-rose-500">{tenants.length === 0 ? '₹0' : '₹37,350'}</strong>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Infrastructure costs (Twilio/SMS):</span>
-                        <strong className="text-rose-500">{tenants.length === 0 ? '₹0' : '₹24,900'}</strong>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Est. Monthly Net Profit:</span>
-                        <strong className="text-emerald-500 text-sm">{formatCurrency(tenants.length === 0 ? 0 : overviewStats.mrr - 62250)}</strong>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>GST Tax collected summary:</span>
-                        <strong>{tenants.length === 0 ? '₹0' : '18% standard'}</strong>
-                      </div>
-                    </div>
+                  <CardContent className="p-4 space-y-1">
+                    <span className="text-[9px] text-muted-foreground uppercase font-bold">Operating Expenses</span>
+                    <h3 className="text-xl font-bold text-rose-500">{formatCurrency(financials.monthExpenses)}</h3>
+                    <span className="text-[8px] text-muted-foreground">Yearly: {formatCurrency(financials.yearExpenses)}</span>
+                  </CardContent>
+                </Card>
+                <Card className="border bg-card">
+                  <CardContent className="p-4 space-y-1">
+                    <span className="text-[9px] text-muted-foreground uppercase font-bold">Net Platform Profit</span>
+                    <h3 className={`text-xl font-bold ${financials.netProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {formatCurrency(financials.netProfit)}
+                    </h3>
+                    <span className="text-[8px] text-muted-foreground">Margin: {financials.profitMargin}%</span>
+                  </CardContent>
+                </Card>
+                <Card className="border bg-card">
+                  <CardContent className="p-4 space-y-1">
+                    <span className="text-[9px] text-muted-foreground uppercase font-bold">Operating / Recurring Cost</span>
+                    <h3 className="text-xl font-bold text-rose-500">{formatCurrency(financials.operatingCost)}</h3>
+                    <span className="text-[8px] text-muted-foreground">Recurring: {formatCurrency(financials.recurringCost)}</span>
+                  </CardContent>
+                </Card>
+                <Card className="border bg-card">
+                  <CardContent className="p-4 space-y-1">
+                    <span className="text-[9px] text-muted-foreground uppercase font-bold">GST Collected Summary</span>
+                    <h3 className="text-xl font-bold text-primary">{formatCurrency(financials.gstCollected)}</h3>
+                    <span className="text-[8px] text-muted-foreground">Rate: {globalSettings.tax_rate}%</span>
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Infrastructure Expense Manager */}
+              <Card>
+                <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-bold flex items-center gap-1.5"><Server className="h-4 w-4 text-rose-500" /> Infrastructure Expense Manager</CardTitle>
+                    <CardDescription className="text-xs">Platform hosting, developer cost, and third party APIs expenses registries.</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Select value={expMonth} onValueChange={setExpMonth}>
+                      <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <SelectItem key={i + 1} value={(i + 1).toString()}>Month {i + 1}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={expYear} onValueChange={setExpYear}>
+                      <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="2026">2026</SelectItem>
+                        <SelectItem value="2027">2027</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" variant="outline" className="h-8 text-[10px] font-bold" onClick={() => handleOpenExpenseModal('create')}>
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Log Expense
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto text-xs">
+                    <table className="w-full text-left">
+                      <thead className="bg-muted/30 border-b text-muted-foreground font-semibold uppercase text-[9px]">
+                        <tr>
+                          <th className="p-3">Month/Year</th>
+                          <th className="p-3">Hosting (Vercel)</th>
+                          <th className="p-3">Supabase</th>
+                          <th className="p-3">Developer Cost</th>
+                          <th className="p-3">SMS Gateways</th>
+                          <th className="p-3">Payment Fees</th>
+                          <th className="p-3">Misc</th>
+                          <th className="p-3">Notes</th>
+                          <th className="p-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {expenses.filter(e => e.month === expMonth && e.year === expYear).map((e, idx) => (
+                          <tr key={e.id || idx} className="hover:bg-muted/10 transition-colors">
+                            <td className="p-3 font-semibold text-primary">M{e.month} - {e.year}</td>
+                            <td className="p-3">{formatCurrency(e.hosting_cost)}</td>
+                            <td className="p-3">{formatCurrency(e.supabase_cost)}</td>
+                            <td className="p-3">{formatCurrency(e.developer_cost)}</td>
+                            <td className="p-3">{formatCurrency(e.sms_provider_cost)}</td>
+                            <td className="p-3">{formatCurrency(e.payment_gateway_fees)}</td>
+                            <td className="p-3">{formatCurrency(e.misc_cost)}</td>
+                            <td className="p-3 text-muted-foreground truncate max-w-xs">{e.notes || '—'}</td>
+                            <td className="p-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => handleOpenExpenseModal(e)}>Edit</Button>
+                                <Button size="sm" variant="outline" className="h-7 text-[10px] text-rose-500" onClick={() => handleDeleteExpense(e.id)}>Delete</Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {expenses.filter(e => e.month === expMonth && e.year === expYear).length === 0 && (
+                          <tr>
+                            <td colSpan={9} className="p-8 text-center text-muted-foreground font-semibold">
+                              No expense records registered for Month {expMonth}/{expYear}.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Reports Download Panel */}
               <Card>
                 <CardHeader className="pb-3 border-b">
                   <CardTitle className="text-sm font-bold">Download Platform Reports Logs</CardTitle>
-                  <CardDescription className="text-xs">Generate and save analytical reports.</CardDescription>
+                  <CardDescription className="text-xs">Generate and save P&L, Subscription, and Tenant analytical reports.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                     <div className="border p-4 rounded-2xl hover:bg-muted/10 transition-colors flex flex-col justify-between items-center h-28">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Platform Revenue Reports</span>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Revenue & Expense P&L reports</span>
                       <Button size="sm" variant="gradient" className="h-7 w-full font-semibold" onClick={handleExportCSV}>Download CSV</Button>
                     </div>
                     <div className="border p-4 rounded-2xl hover:bg-muted/10 transition-colors flex flex-col justify-between items-center h-28">
@@ -1601,7 +2006,7 @@ export default function SuperAdminDashboard() {
                       <Button size="sm" variant="gradient" className="h-7 w-full font-semibold" onClick={handleExportCSV}>Download Excel</Button>
                     </div>
                     <div className="border p-4 rounded-2xl hover:bg-muted/10 transition-colors flex flex-col justify-between items-center h-28">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Growth & Churn Analysis</span>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Tenant Spread & Churn Report</span>
                       <Button size="sm" variant="gradient" className="h-7 w-full font-semibold" onClick={handleExportCSV}>Download PDF</Button>
                     </div>
                   </div>
@@ -1780,7 +2185,7 @@ export default function SuperAdminDashboard() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-1.5 text-rose-500"><AlertTriangle className="h-5 w-5" /> Critical Action: Factory Reset</DialogTitle>
             <DialogDescription className="text-rose-500/80">
-              This action is destructive and can NOT be undone. It wipes all database records (salons, users, logs) and restores initial default setups.
+              This action is destructive and can NOT be undone. It wipes all database records (salons, users, logs, expenses) and restores initial default setups.
             </DialogDescription>
           </DialogHeader>
           
@@ -1829,23 +2234,34 @@ export default function SuperAdminDashboard() {
                 <Input type="number" value={planPriceYearly} onChange={e => setPlanPriceYearly(Number(e.target.value))} className="h-8 bg-card" />
               </div>
               <div className="space-y-1">
-                <Label>Trial Days</Label>
-                <Input type="number" value={planTrialDays} onChange={e => setPlanTrialDays(Number(e.target.value))} className="h-8 bg-card" />
+                <Label>Staff Limit</Label>
+                <Input type="number" value={planStaffLimit} onChange={e => setPlanStaffLimit(Number(e.target.value))} className="h-8 bg-card" />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
-                <Label>Staff Limit</Label>
-                <Input type="number" value={planStaffLimit} onChange={e => setPlanStaffLimit(Number(e.target.value))} className="h-8 bg-card" />
-              </div>
-              <div className="space-y-1">
-                <Label>Customer Limit</Label>
-                <Input type="number" value={planCustomerLimit} onChange={e => setPlanCustomerLimit(Number(e.target.value))} className="h-8 bg-card" />
+                <Label>Branch Limit</Label>
+                <Input type="number" value={planBranchLimit} onChange={e => setPlanBranchLimit(Number(e.target.value))} className="h-8 bg-card" />
               </div>
               <div className="space-y-1">
                 <Label>Storage (GB)</Label>
                 <Input type="number" value={planStorageLimit} onChange={e => setPlanStorageLimit(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+              <div className="space-y-1">
+                <Label>AI Credits</Label>
+                <Input type="number" value={planAiCredits} onChange={e => setPlanAiCredits(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>SMS Credits Limit</Label>
+                <Input type="number" value={planSmsCredits} onChange={e => setPlanSmsCredits(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+              <div className="space-y-1">
+                <Label>WhatsApp Credits Limit</Label>
+                <Input type="number" value={planWhatsappCredits} onChange={e => setPlanWhatsappCredits(Number(e.target.value))} className="h-8 bg-card" />
               </div>
             </div>
           </div>
@@ -1861,8 +2277,8 @@ export default function SuperAdminDashboard() {
       <Dialog open={!!showCouponModal} onOpenChange={(open) => !open && setShowCouponModal(null)}>
         <DialogContent className="max-w-md text-left text-xs">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-1.5"><Tag className="h-5 w-5 text-primary" /> Create Discount Coupon</DialogTitle>
-            <DialogDescription>Add a new promotional promo discount code to the catalog.</DialogDescription>
+            <DialogTitle className="flex items-center gap-1.5"><Tag className="h-5 w-5 text-primary" /> {showCouponModal === 'create' ? 'Create Coupon' : 'Edit Coupon Details'}</DialogTitle>
+            <DialogDescription>Add or edit a promotional discount promo code.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-3">
@@ -1872,45 +2288,144 @@ export default function SuperAdminDashboard() {
                 <Input placeholder="e.g. SUMMER30" value={coupCode} onChange={e => setCoupCode(e.target.value)} className="h-8 bg-card font-mono" />
               </div>
               <div className="space-y-1">
-                <Label>Discount Percent (%)</Label>
+                <Label>Discount Value</Label>
                 <Input type="number" value={coupDiscount} onChange={e => setCoupDiscount(Number(e.target.value))} className="h-8 bg-card" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Usage Limit Count</Label>
-                <Input type="number" value={coupLimit} onChange={e => setCoupLimit(Number(e.target.value))} className="h-8 bg-card" />
+                <Label>Discount Type</Label>
+                <Select value={coupType} onValueChange={(val: any) => setCoupType(val)}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="flat">Flat Value (INR)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
-                <Label>Expiry Date</Label>
-                <Input type="date" value={coupExpiry} onChange={e => setCoupExpiry(e.target.value)} className="h-8 bg-card" />
+                <Label>Maximum Usage Limit</Label>
+                <Input type="number" value={coupLimit} onChange={e => setCoupLimit(Number(e.target.value))} className="h-8 bg-card" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Coupon Scope</Label>
-                <Select value={coupScope} onValueChange={setCoupScope}>
-                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="global">Global (All tenants)</SelectItem>
-                    <SelectItem value="tenant">Tenant Specific</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Start Date</Label>
+                <Input type="date" value={coupStart} onChange={e => setCoupStart(e.target.value)} className="h-8 bg-card" />
               </div>
-              {coupScope === 'tenant' && (
-                <div className="space-y-1">
-                  <Label>Bound Tenant ID</Label>
-                  <Input placeholder="e.g. demo-tenant-001" value={coupTenantId} onChange={e => setCoupTenantId(e.target.value)} className="h-8 bg-card" />
-                </div>
-              )}
+              <div className="space-y-1">
+                <Label>Expiry End Date</Label>
+                <Input type="date" value={coupEnd} onChange={e => setCoupEnd(e.target.value)} className="h-8 bg-card" />
+              </div>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setShowCouponModal(null)}>Cancel</Button>
-            <Button variant="gradient" size="sm" onClick={handleCreateCoupon}>Configure Coupon</Button>
+            <Button variant="gradient" size="sm" onClick={handleSaveCoupon}>Configure Coupon</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* EXPENSE LOGGING DIALOG MODAL */}
+      <Dialog open={!!showExpenseModal} onOpenChange={(open) => !open && setShowExpenseModal(null)}>
+        <DialogContent className="max-w-md text-left text-xs">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-1.5"><Server className="h-5 w-5 text-primary" /> {showExpenseModal === 'create' ? 'Log Platform Expense' : 'Edit Infrastructure Cost'}</DialogTitle>
+            <DialogDescription>Maintain exact hardware, database, API gateway, and developer cost details.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Expense Month</Label>
+                <Select value={expMonth} onValueChange={setExpMonth}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <SelectItem key={i + 1} value={(i + 1).toString()}>Month {i + 1}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Expense Year</Label>
+                <Select value={expYear} onValueChange={setExpYear}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2026">2026</SelectItem>
+                    <SelectItem value="2027">2027</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label>Vercel Hosting</Label>
+                <Input type="number" value={expHosting} onChange={e => setExpHosting(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+              <div className="space-y-1">
+                <Label>Supabase</Label>
+                <Input type="number" value={expSupabase} onChange={e => setExpSupabase(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+              <div className="space-y-1">
+                <Label>Database</Label>
+                <Input type="number" value={expDatabase} onChange={e => setExpDatabase(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label>Storage Cost</Label>
+                <Input type="number" value={expStorage} onChange={e => setExpStorage(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+              <div className="space-y-1">
+                <Label>Email APIs</Label>
+                <Input type="number" value={expEmail} onChange={e => setExpEmail(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+              <div className="space-y-1">
+                <Label>SMS Gateways</Label>
+                <Input type="number" value={expSms} onChange={e => setExpSms(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label>Stripe Fees</Label>
+                <Input type="number" value={expGateway} onChange={e => setExpGateway(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+              <div className="space-y-1">
+                <Label>Developers</Label>
+                <Input type="number" value={expDeveloper} onChange={e => setExpDeveloper(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+              <div className="space-y-1">
+                <Label>Marketing Cost</Label>
+                <Input type="number" value={expMarketing} onChange={e => setExpMarketing(Number(e.target.value))} className="h-8 bg-card" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Miscellaneous Overhead</Label>
+              <Input type="number" value={expMisc} onChange={e => setExpMisc(Number(e.target.value))} className="h-8 bg-card" />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Description Notes</Label>
+              <textarea 
+                className="w-full min-h-[50px] bg-card border rounded-xl p-2 outline-none focus:ring-1 focus:ring-primary text-xs" 
+                value={expNotes} 
+                onChange={e => setExpNotes(e.target.value)}
+                placeholder="Log notes about hardware or licensing overheads..."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setShowExpenseModal(null)}>Cancel</Button>
+            <Button variant="gradient" size="sm" onClick={handleSaveExpense}>Log Cost</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
