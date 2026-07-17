@@ -42,26 +42,46 @@ export function ServiceDetailsModal({ serviceId, isOpen, onClose, onSuccess }: S
   const [description, setDescription] = useState('')
   const [isOnline, setIsOnline] = useState(true)
   const [requiredProducts, setRequiredProducts] = useState('')
+  const [categories, setCategories] = useState<any[]>([])
+  const [categoryId, setCategoryId] = useState('')
 
   const loadServiceDetails = async () => {
-    if (!serviceId) return
     try {
       setLoading(true)
-      const list = await ServiceCatalogService.list(activeTenantId)
-      const data = list.find(s => s.id === serviceId)
-      if (data) {
-        setService(data)
-        setName(data.name)
-        setPrice(data.price)
-        setDuration(data.duration_minutes)
-        setBufferTime(10) // default buffer
-        setDescription(data.description || '')
-        setIsOnline(data.is_online_bookable)
-        setRequiredProducts("Hair Serum, Styling Spray") // default consumables
-        
-        // Load staff lists
-        const st = await StaffRepository.list(activeTenantId)
-        setStaffList(st.filter(s => s.specializations?.includes(data.name)))
+      const cats = await ServiceCatalogService.listCategories(activeTenantId)
+      setCategories(cats)
+
+      if (serviceId) {
+        // Edit Mode
+        const list = await ServiceCatalogService.list(activeTenantId)
+        const data = list.find(s => s.id === serviceId)
+        if (data) {
+          setService(data)
+          setName(data.name)
+          setPrice(data.price)
+          setDuration(data.duration_minutes)
+          setBufferTime(10) // default buffer
+          setDescription(data.description || '')
+          setIsOnline(data.is_online_bookable)
+          setCategoryId(data.category_id)
+          setRequiredProducts("Hair Serum, Styling Spray") // default consumables
+          
+          // Load staff lists
+          const st = await StaffRepository.list(activeTenantId)
+          setStaffList(st.filter(s => s.specializations?.includes(data.name)))
+        }
+      } else {
+        // Creation Mode
+        setService({ id: 'new', category_name: cats[0]?.name || '' })
+        setName('')
+        setPrice(0)
+        setDuration(30)
+        setBufferTime(10)
+        setDescription('')
+        setIsOnline(true)
+        setCategoryId(cats[0]?.id || '')
+        setRequiredProducts('')
+        setStaffList([])
       }
     } catch (e) {
       console.error('Failed to load service specs', e)
@@ -71,12 +91,12 @@ export function ServiceDetailsModal({ serviceId, isOpen, onClose, onSuccess }: S
   }
 
   useEffect(() => {
-    if (isOpen && serviceId) {
+    if (isOpen) {
       loadServiceDetails()
     }
   }, [isOpen, serviceId])
 
-  // Save Service updates
+  // Save Service updates or create new
   const handleUpdate = async () => {
     if (!service) return
     if (!permissionHelpers.canUpdate(role, 'services')) {
@@ -85,24 +105,45 @@ export function ServiceDetailsModal({ serviceId, isOpen, onClose, onSuccess }: S
     }
     try {
       setSubmitting(true)
-      await ServiceCatalogService.update(
-        service.id,
-        activeTenantId,
-        {
-          name,
-          price,
-          duration_minutes: duration,
-          description,
-          is_online_bookable: isOnline,
-        },
-        user?.id || 'anonymous',
-        user ? `${user.first_name} ${user.last_name || ''}` : 'System'
-      )
-      success('Catalog Updated', `${name} successfully updated.`)
+      if (serviceId) {
+        // Edit mode
+        await ServiceCatalogService.update(
+          service.id,
+          activeTenantId,
+          {
+            name,
+            price,
+            duration_minutes: duration,
+            description,
+            is_online_bookable: isOnline,
+            category_id: categoryId,
+          },
+          user?.id || 'anonymous',
+          user ? `${user.first_name} ${user.last_name || ''}` : 'System'
+        )
+        success('Catalog Updated', `${name} successfully updated.`)
+      } else {
+        // Create mode
+        await ServiceCatalogService.create(
+          activeTenantId,
+          {
+            name,
+            price,
+            duration_minutes: duration,
+            description,
+            is_online_bookable: isOnline,
+            category_id: categoryId,
+            tax_percent: 18,
+          },
+          user?.id || 'anonymous',
+          user ? `${user.first_name} ${user.last_name || ''}` : 'System'
+        )
+        success('Service Created', `${name} successfully added to catalog.`)
+      }
       onClose()
       onSuccess()
     } catch (e: any) {
-      error('Failed to update catalog', e.message)
+      error('Failed to save service', e.message)
     } finally {
       setSubmitting(false)
     }
@@ -121,8 +162,22 @@ export function ServiceDetailsModal({ serviceId, isOpen, onClose, onSuccess }: S
             <DialogHeader className="p-6 border-b pb-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <DialogTitle className="text-xl">{name}</DialogTitle>
-                  <Badge variant="secondary" className="mt-1">{service.category_name}</Badge>
+                  <DialogTitle className="text-xl">{serviceId ? (name || 'Edit Service') : 'Add New Service'}</DialogTitle>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Category:</span>
+                    <Select value={categoryId} onValueChange={setCategoryId} disabled={submitting || !permissionHelpers.canUpdate(role, 'services')}>
+                      <SelectTrigger className="h-6 text-[10px] w-[140px] px-2 py-0">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((c: any) => (
+                          <SelectItem key={c.id} value={c.id} className="text-xs">
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="font-bold text-lg text-primary">{formatCurrency(price)}</div>
               </div>
@@ -204,7 +259,7 @@ export function ServiceDetailsModal({ serviceId, isOpen, onClose, onSuccess }: S
                 <Button variant="outline" onClick={onClose} disabled={submitting}>Cancel</Button>
                 <Button variant="gradient" onClick={handleUpdate} disabled={submitting}>
                   {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
-                  Save Service Changes
+                  {serviceId ? 'Save Service Changes' : 'Create Service'}
                 </Button>
               </DialogFooter>
             )}
