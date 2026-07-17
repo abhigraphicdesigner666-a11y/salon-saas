@@ -183,10 +183,10 @@ export const AppointmentService = {
 
     if (status === 'completed' && original.status !== 'completed') {
       const consumed: any[] = []
-      if (original.service_name?.toLowerCase().includes('color') || original.service_name?.toLowerCase().includes('haircut') || original.services?.some((s: any) => s.name?.toLowerCase().includes('color'))) {
+      if ((original as any).service_name?.toLowerCase().includes('color') || (original as any).service_name?.toLowerCase().includes('haircut') || original.services?.some((s: any) => s.service_name?.toLowerCase().includes('color'))) {
         consumed.push({ id: 'p1', name: 'Loreal Color Gel', qty: 1 })
       }
-      if (original.service_name?.toLowerCase().includes('facial') || original.services?.some((s: any) => s.name?.toLowerCase().includes('facial'))) {
+      if ((original as any).service_name?.toLowerCase().includes('facial') || original.services?.some((s: any) => s.service_name?.toLowerCase().includes('facial'))) {
         consumed.push({ id: 'p2', name: 'O3+ Facial Kit', qty: 1 })
       }
       
@@ -197,7 +197,7 @@ export const AppointmentService = {
           product_name: item.name,
           change_quantity: -item.qty,
           type: 'outgoing',
-          reason: `Service Consumption: ${original.service_name || 'Salon Session'} (Apt #${original.id.slice(-4)})`
+          reason: `Service Consumption: ${(original as any).service_name || 'Salon Session'} (Apt #${original.id.slice(-4)})`
         })
         
         const p = await ProductRepository.getById(item.id)
