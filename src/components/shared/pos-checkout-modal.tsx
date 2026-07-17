@@ -62,7 +62,7 @@ export function POSCheckoutModal({ isOpen, onClose, onSuccess }: POSCheckoutModa
       setCustomers(c)
       setServices(s)
       setProducts(p)
-      setAppointments(apt.filter(a => a.status === 'booked' || a.status === 'checked_in'))
+      setAppointments(apt.filter(a => (a.status as any) === 'booked' || (a.status as any) === 'checked_in' || a.status === 'scheduled' || a.status === 'confirmed'))
     } catch (e) {
       console.error('Failed to load POS catalog pools', e)
     } finally {
