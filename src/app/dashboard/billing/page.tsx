@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Search, Download, Filter, IndianRupee, FileText, Eye, Loader2 } from 'lucide-react'
+import { Plus, Search, Download, Filter, IndianRupee, FileText, Eye, Loader2, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -62,8 +62,9 @@ export default function BillingPage() {
   const canCheckout = role !== 'accountant' // Accountants are read-only
   const canExport = permissionHelpers.canExport(role, 'billing')
 
-  const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.total_amount, 0)
-  const totalPending = invoices.filter(i => (i.status as any) === 'pending' || i.status === 'sent' || i.status === 'overdue').reduce((sum, i) => sum + i.total_amount, 0)
+  const paidInvoices = invoices.filter(i => i.status === 'paid')
+  const totalRevenue = paidInvoices.reduce((sum, i) => sum + i.total_amount, 0)
+  const averageTicketValue = paidInvoices.length > 0 ? Math.round(totalRevenue / paidInvoices.length) : 0
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -86,7 +87,7 @@ export default function BillingPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard title="Total Collected" value={totalRevenue} isCurrency icon={IndianRupee} color="green" />
-        <StatCard title="Pending Outstanding" value={totalPending} isCurrency icon={FileText} color="amber" />
+        <StatCard title="Average Ticket Value" value={averageTicketValue} isCurrency icon={TrendingUp} color="amber" />
         <StatCard title="Total Invoice Ledgers" value={invoices.length} icon={FileText} color="violet" />
       </div>
 
