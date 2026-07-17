@@ -921,6 +921,33 @@ export const SuperAdminRepository = {
     saveMockTable('saas_settings', [settings])
   },
 
+  listExpenses: async (): Promise<any[]> => {
+    return getMockTable<any>('saas_expenses', [
+      {
+        id: 'exp-default-1',
+        hosting_provider: 'Vercel',
+        hosting_cost: 15000,
+        supabase_cost: 8000,
+        database_cost: 5000,
+        storage_cost: 2000,
+        email_provider_cost: 3500,
+        sms_provider_cost: 14000,
+        payment_gateway_fees: 8500,
+        developer_cost: 25000,
+        marketing_cost: 12000,
+        misc_cost: 1000,
+        tax: 18,
+        notes: 'Standard monthly infrastructure overheads.',
+        month: '7',
+        year: '2026'
+      }
+    ])
+  },
+
+  saveExpenses: async (expenses: any[]): Promise<void> => {
+    saveMockTable('saas_expenses', expenses)
+  },
+
   factoryResetSaaS: async (): Promise<void> => {
     if (typeof window === 'undefined') return
     localStorage.setItem('salon_ai_db_factory_reset_active', 'true')
@@ -939,7 +966,8 @@ export const SuperAdminRepository = {
       'auditLogs',
       'notifications',
       'saas_coupons',
-      'drawer_logs'
+      'drawer_logs',
+      'saas_expenses'
     ]
 
     collectionsToClear.forEach(col => {
