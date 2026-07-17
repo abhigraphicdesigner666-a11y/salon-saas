@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart3, Building2, CreditCard, Shield, Settings, Menu, ShieldAlert, LogOut } from 'lucide-react'
+import { BarChart3, Building2, CreditCard, Shield, Settings, Menu, ShieldAlert, LogOut, Layers, Tag, Landmark } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/shared/logo'
@@ -15,12 +15,32 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const router = useRouter()
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const getActiveTab = () => {
+        const params = new URLSearchParams(window.location.search)
+        return params.get('tab') || 'overview'
+      }
+      setActiveTab(getActiveTab())
+      
+      const handleLocationChange = () => {
+        setActiveTab(getActiveTab())
+      }
+      window.addEventListener('popstate', handleLocationChange)
+      return () => window.removeEventListener('popstate', handleLocationChange)
+    }
+  }, [])
 
   const navItems = [
-    { label: 'Global Command Center', href: '/admin?tab=overview', icon: BarChart3 },
-    { label: 'Tenants (Salons)', href: '/admin?tab=tenants', icon: Building2 },
-    { label: 'Plans & Billing', href: '/admin?tab=billing', icon: CreditCard },
-    { label: 'System Audit Logs', href: '/admin?tab=audit', icon: Shield },
+    { label: 'Command Center', href: '/admin?tab=overview', icon: BarChart3 },
+    { label: 'Pricing Plans', href: '/admin?tab=plans', icon: Layers },
+    { label: 'Coupon Center', href: '/admin?tab=coupons', icon: Tag },
+    { label: 'Tenants Directory', href: '/admin?tab=tenants', icon: Building2 },
+    { label: 'Platform & Security', href: '/admin?tab=health', icon: Shield },
+    { label: 'Business Settings', href: '/admin?tab=settings', icon: Settings },
+    { label: 'Reports & Success', href: '/admin?tab=success', icon: Landmark },
   ]
 
   const handleLogout = async () => {
@@ -42,7 +62,8 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
         <nav className="flex-1 py-4 px-3 space-y-1">
           {navItems.map(item => {
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+            const itemTab = new URLSearchParams(item.href.split('?')[1] || '').get('tab') || 'overview'
+            const isActive = activeTab === itemTab
             return (
               <Link key={item.href} href={item.href}>
                 <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors text-xs font-semibold ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground'} ${collapsed && 'justify-center'}`}>
