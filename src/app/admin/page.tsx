@@ -545,11 +545,11 @@ export default function SuperAdminDashboard() {
   // Export CSV
   const handleExportCSV = () => {
     try {
-      const headers = ['Salon Name,Owner Name,Owner Email,Plan,Status,Renewal,MRR,Staff,HealthScore\n']
+      const header = 'Salon Name,Owner Name,Owner Email,Plan,Status,Renewal,MRR,Staff,HealthScore\n'
       const rows = filteredTenants.map(t => 
         `"${t.name}","${t.owner_name || ''}","${t.owner_email}","${t.plan}","${t.status}","${t.subscription_renewal || ''}",${t.mrr_revenue || 0},${t.staff_count || 0},${t.health_score || 100}`
       )
-      const blob = new Blob([headers.concat(rows.join('\n'))], { type: 'text/csv' })
+      const blob = new Blob([header + rows.join('\n')], { type: 'text/csv' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
