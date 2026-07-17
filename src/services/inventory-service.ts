@@ -73,7 +73,7 @@ export const InventoryService = {
     )
 
     const updatedQty = Math.max((p.stock_quantity || 0) + adjustData.change, 0)
-    if (updatedQty <= (p.reorder_level || 5)) {
+    if (updatedQty <= (p.min_stock_level || 5)) {
       await NotificationService.send(
         tenantId,
         'Low Stock Alert',
